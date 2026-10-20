@@ -1,0 +1,20 @@
+[
+  {
+    "id": "room-welcome-2026",
+    "code": "849-392-1849",
+    "title": "Global Collaboration Hub",
+    "hostId": "usr-alex-chen",
+    "hostName": "Alex Chen",
+    "createdAt": "2026-10-19T15:20:14.822Z",
+    "isLocked": false
+  },
+  {
+    "id": "room-4949aa22556f1c46",
+    "code": "212-994-7177",
+    "title": "Architecture Review & Demo",
+    "hostId": "guest-host",
+    "hostName": "Alice Host",
+    "createdAt": "2026-10-19T15:20:26.415Z",
+    "isLocked": false
+  }
+]

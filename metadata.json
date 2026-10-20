@@ -1,0 +1,12 @@
+{
+  "name": "NEXMEET - Real-Time Communication & Collaboration",
+  "description": "High-performance real-time video conferencing, screen sharing, file sharing, and synchronized whiteboard collaboration platform.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "display-capture"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
