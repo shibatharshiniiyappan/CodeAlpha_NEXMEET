@@ -13,6 +13,8 @@ export interface AISummary {
   generatedAt: string;
 }
 
+export type SpatialRoomTheme = 'innovation-lab' | 'focus-room' | 'creative-studio' | 'boardroom';
+
 export interface Meeting {
   id: string;
   code: string;
@@ -25,6 +27,7 @@ export interface Meeting {
   hasPasscode?: boolean;
   waitingRoomEnabled?: boolean;
   screensharePolicy?: 'anyone' | 'host_only';
+  spatialTheme?: SpatialRoomTheme;
   aiSummary?: AISummary;
 }
 
@@ -36,6 +39,8 @@ export interface RoomPeer {
   audioEnabled: boolean;
   videoEnabled: boolean;
   isScreenSharing: boolean;
+  isSpeaking?: boolean;
+  handRaised?: boolean;
   isHost?: boolean;
   joinedAt: number;
 }
@@ -142,3 +147,40 @@ export interface NetworkDiagnosticsStats {
   qualityScore: 'Excellent' | 'Good' | 'Fair' | 'Poor';
   timestamp: number;
 }
+
+export type CanvasNoteCategory = 'idea' | 'question' | 'challenge' | 'decision' | 'action';
+
+export interface CanvasNote {
+  id: string;
+  category: CanvasNoteCategory;
+  title: string;
+  content: string;
+  x: number;
+  y: number;
+  votes: number;
+  votedUserIds: string[];
+  assignee?: string;
+  status?: 'pending' | 'in_progress' | 'completed';
+  dueDate?: string;
+  createdBy: string;
+  createdByName: string;
+  createdAt: number;
+}
+
+export interface ReactionEvent {
+  id: string;
+  emoji: string;
+  senderName: string;
+  timestamp: number;
+  xOffsetPercent?: number;
+}
+
+export interface TalkTimeStats {
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  totalSpeakingSeconds: number;
+  percentage: number;
+  isCurrentlySpeaking: boolean;
+}
+

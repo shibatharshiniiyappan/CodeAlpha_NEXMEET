@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Socket } from 'socket.io-client';
-import { RoomPeer, User, NetworkDiagnosticsStats } from '../types';
+import { RoomPeer, User, NetworkDiagnosticsStats, SpatialRoomTheme } from '../types';
 
 interface RemoteParticipant {
   socketId: string;
@@ -32,6 +32,9 @@ export function useWebRTC(roomId: string, currentUser: User, socket: Socket | nu
   const [selfSocketId, setSelfSocketId] = useState<string>('');
   const [screensharePolicy, setScreensharePolicy] = useState<'anyone' | 'host_only'>('anyone');
   const [isMeetingLocked, setIsMeetingLocked] = useState<boolean>(false);
+  const [spatialTheme, setSpatialTheme] = useState<SpatialRoomTheme>('innovation-lab');
+  const [isHandRaised, setIsHandRaised] = useState<boolean>(false);
+  const [talkTimeMap, setTalkTimeMap] = useState<Map<string, number>>(new Map());
 
   // Network Diagnostics State
   const [diagnostics, setDiagnostics] = useState<NetworkDiagnosticsStats>({
@@ -135,6 +138,43 @@ export function useWebRTC(roomId: string, currentUser: User, socket: Socket | nu
       console.warn('AudioAnalyser setup skipped', e);
     }
   };
+
+  // Broadcast speaking state change
+  useEffect(() => {
+    if (socket) {
+      socket.emit('peer:speaking', { isSpeaking: isLocalSpeaking });
+    }
+  }, [isLocalSpeaking, socket]);
+
+  // Real-Time Talk Time Tracker: Accumulate active seconds per speaker
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTalkTimeMap((prev) => {
+        const next = new Map(prev);
+        if (isLocalSpeaking) {
+          next.set(currentUser.id, (next.get(currentUser.id) || 0) + 1);
+        }
+        remoteParticipants.forEach((remote) => {
+          if (remote.isSpeaking) {
+            next.set(remote.peerInfo.userId, (next.get(remote.peerInfo.userId) || 0) + 1);
+          }
+        });
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isLocalSpeaking, remoteParticipants, currentUser.id]);
+
+  // Toggle Hand Raise
+  const toggleHandRaise = useCallback(() => {
+    setIsHandRaised((prev) => {
+      const next = !prev;
+      if (socket) {
+        socket.emit('hand:toggle', { raised: next });
+      }
+      return next;
+    });
+  }, [socket]);
 
   // Helper to create an RTCPeerConnection for a remote peer
   const createPeerConnection = useCallback((remoteSocketId: string, peerInfo: RoomPeer) => {
@@ -241,6 +281,7 @@ export function useWebRTC(roomId: string, currentUser: User, socket: Socket | nu
       if (meetingDetails) {
         if (typeof meetingDetails.isLocked === 'boolean') setIsMeetingLocked(meetingDetails.isLocked);
         if (meetingDetails.screensharePolicy) setScreensharePolicy(meetingDetails.screensharePolicy);
+        if (meetingDetails.spatialTheme) setSpatialTheme(meetingDetails.spatialTheme);
       }
 
       for (const peer of peers) {
@@ -416,6 +457,38 @@ export function useWebRTC(roomId: string, currentUser: User, socket: Socket | nu
       setScreensharePolicy(policy);
     };
 
+    const handleSpatialThemeUpdated = ({ theme }: { theme: SpatialRoomTheme }) => {
+      setSpatialTheme(theme);
+    };
+
+    const handlePeerSpeakingChanged = ({ socketId, isSpeaking }: { socketId: string; isSpeaking: boolean }) => {
+      setRemoteParticipants((prev) => {
+        const next = new Map(prev);
+        const existing = next.get(socketId);
+        if (existing) {
+          next.set(socketId, { ...existing, isSpeaking });
+        }
+        return next;
+      });
+    };
+
+    const handleHandUpdated = ({ socketId, userId, handRaised }: { socketId: string; userId: string; handRaised: boolean }) => {
+      if (userId === currentUser.id) {
+        setIsHandRaised(handRaised);
+      }
+      setRemoteParticipants((prev) => {
+        const next = new Map(prev);
+        const existing = next.get(socketId);
+        if (existing) {
+          next.set(socketId, {
+            ...existing,
+            peerInfo: { ...existing.peerInfo, handRaised },
+          });
+        }
+        return next;
+      });
+    };
+
     socket.on('room-users', handleRoomUsers);
     socket.on('user-joined', handleUserJoined);
     socket.on('webrtc:offer', handleOffer);
@@ -427,6 +500,9 @@ export function useWebRTC(roomId: string, currentUser: User, socket: Socket | nu
     socket.on('host:force-stop-screenshare', handleForceStopScreenshare);
     socket.on('meeting:lock-updated', handleLockUpdated);
     socket.on('meeting:screenshare-policy-updated', handleScreensharePolicyUpdated);
+    socket.on('spatial:theme-updated', handleSpatialThemeUpdated);
+    socket.on('peer:speaking-changed', handlePeerSpeakingChanged);
+    socket.on('hand:updated', handleHandUpdated);
 
     return () => {
       mounted = false;
@@ -441,6 +517,9 @@ export function useWebRTC(roomId: string, currentUser: User, socket: Socket | nu
       socket.off('host:force-stop-screenshare', handleForceStopScreenshare);
       socket.off('meeting:lock-updated', handleLockUpdated);
       socket.off('meeting:screenshare-policy-updated', handleScreensharePolicyUpdated);
+      socket.off('spatial:theme-updated', handleSpatialThemeUpdated);
+      socket.off('peer:speaking-changed', handlePeerSpeakingChanged);
+      socket.off('hand:updated', handleHandUpdated);
 
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -653,6 +732,11 @@ export function useWebRTC(roomId: string, currentUser: User, socket: Socket | nu
     screensharePolicy,
     isMeetingLocked,
     diagnostics,
+    spatialTheme,
+    setSpatialTheme,
+    isHandRaised,
+    toggleHandRaise,
+    talkTimeMap,
     toggleAudio,
     toggleVideo,
     toggleScreenShare,

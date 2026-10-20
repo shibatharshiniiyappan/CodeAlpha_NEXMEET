@@ -38,6 +38,7 @@ export const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<boolean>(false);
   const [copiedInvite, setCopiedInvite] = useState<boolean>(false);
+  const [selectedTheme, setSelectedTheme] = useState<'innovation-lab' | 'focus-room' | 'creative-studio' | 'boardroom'>('innovation-lab');
 
   if (!isOpen) return null;
 
@@ -50,7 +51,10 @@ export const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       const res = await createMeeting(
         title.trim() || defaultTitle,
         currentUser?.name || 'Meeting Host',
-        currentUser?.id || 'host-user'
+        currentUser?.id || 'host-user',
+        {
+          spatialTheme: selectedTheme,
+        }
       );
       setCreatedMeeting(res.meeting);
     } catch (err: any) {
@@ -152,6 +156,35 @@ Tap on the link or paste the Meeting ID into NEXMEET to join.`;
                 />
               </div>
 
+              {/* Spatial Environment Selector */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                  Spatial Environment
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'innovation-lab', name: 'Innovation Lab', desc: 'Cyber neon workspace' },
+                    { id: 'focus-room', name: 'Focus Room', desc: 'Minimalist zen retreat' },
+                    { id: 'creative-studio', name: 'Creative Studio', desc: 'Colourful design atelier' },
+                    { id: 'boardroom', name: 'Boardroom', desc: 'Executive formal space' },
+                  ].map((env) => (
+                    <button
+                      key={env.id}
+                      type="button"
+                      onClick={() => setSelectedTheme(env.id as any)}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        selectedTheme === env.id
+                          ? 'border-cyan-400 bg-cyan-950/40 text-cyan-300 ring-1 ring-cyan-400'
+                          : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <p className="text-xs font-bold text-white leading-tight">{env.name}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{env.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs text-slate-400">
                 <div className="flex items-center gap-2 text-slate-300">
                   <Lock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
@@ -159,7 +192,7 @@ Tap on the link or paste the Meeting ID into NEXMEET to join.`;
                 </div>
                 <div className="flex items-center gap-2 text-slate-300">
                   <Share2 className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-                  <span>Instant shareable invitation URL for multiple participants</span>
+                  <span>Instant shareable invitation URL with selected Spatial 2.5D space</span>
                 </div>
               </div>
 

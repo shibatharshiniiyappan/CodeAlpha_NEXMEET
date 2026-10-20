@@ -5,8 +5,35 @@
     "title": "Global Collaboration Hub",
     "hostId": "usr-alex-chen",
     "hostName": "Alex Chen",
-    "createdAt": "2026-10-19T15:20:14.822Z",
-    "isLocked": false
+    "createdAt": "2026-10-20T08:47:05.904Z",
+    "isLocked": false,
+    "waitingRoomEnabled": false,
+    "screensharePolicy": "anyone",
+    "aiSummary": {
+      "summary": "Executive synchronization regarding the Q4 real-time communication platform architecture, WebRTC mesh stability, and zero-trust security controls.",
+      "topics": [
+        "WebRTC DTLS-SRTP Mesh Scaling",
+        "Waiting Room & Access Verification",
+        "AI Meeting Summarizer Engine"
+      ],
+      "decisions": [
+        "Approved host-side meeting lock enforcement",
+        "Integrated server-side waiting room authorization"
+      ],
+      "actionItems": [
+        {
+          "task": "Deploy waiting room host authorization RPCs",
+          "assignee": "Alex Chen",
+          "status": "completed"
+        },
+        {
+          "task": "Audit DTLS-SRTP connection diagnostic telemetry",
+          "assignee": "Security Lead",
+          "status": "in-progress"
+        }
+      ],
+      "generatedAt": "2026-10-20T08:47:05.904Z"
+    }
   },
   {
     "id": "room-4949aa22556f1c46",
@@ -16,5 +43,29 @@
     "hostName": "Alice Host",
     "createdAt": "2026-10-19T15:20:26.415Z",
     "isLocked": false
+  },
+  {
+    "id": "room-d8484a6da5f052e8",
+    "code": "671-196-6543",
+    "title": "NEXMEET 2.0 Innovation Jam",
+    "hostId": "host-4adb0cc7",
+    "hostName": "Alex Chen",
+    "createdAt": "2026-10-20T08:47:11.317Z",
+    "isLocked": false,
+    "waitingRoomEnabled": false,
+    "screensharePolicy": "anyone",
+    "spatialTheme": "innovation-lab"
+  },
+  {
+    "id": "room-ee380fa4c64963cd",
+    "code": "171-364-5738",
+    "title": "NEXMEET 2.0 Innovation Jam",
+    "hostId": "host-546135a3",
+    "hostName": "Alex Chen",
+    "createdAt": "2026-10-20T08:47:20.269Z",
+    "isLocked": false,
+    "waitingRoomEnabled": false,
+    "screensharePolicy": "anyone",
+    "spatialTheme": "innovation-lab"
   }
 ]

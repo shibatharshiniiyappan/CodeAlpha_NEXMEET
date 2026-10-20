@@ -1,4 +1,4 @@
-import { Meeting, User, FileItem, SecuritySpecs, AISummary, MeetingHistoryRecord } from '../types';
+import { Meeting, User, FileItem, SecuritySpecs, AISummary, MeetingHistoryRecord, CanvasNote, SpatialRoomTheme } from '../types';
 
 const BASE_URL = '';
 
@@ -41,6 +41,7 @@ export async function createMeeting(
     passcode?: string;
     waitingRoomEnabled?: boolean;
     screensharePolicy?: 'anyone' | 'host_only';
+    spatialTheme?: SpatialRoomTheme;
   }
 ): Promise<{ meeting: Meeting }> {
   const res = await fetch(`${BASE_URL}/api/meetings/create`, {
@@ -53,10 +54,18 @@ export async function createMeeting(
       passcode: options?.passcode,
       waitingRoomEnabled: options?.waitingRoomEnabled ?? false,
       screensharePolicy: options?.screensharePolicy ?? 'anyone',
+      spatialTheme: options?.spatialTheme || 'innovation-lab',
     }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Failed to create meeting');
+  return data;
+}
+
+export async function getMeetingCanvasNotes(idOrCode: string): Promise<{ notes: CanvasNote[] }> {
+  const res = await fetch(`${BASE_URL}/api/meetings/${encodeURIComponent(idOrCode)}/canvas-notes`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch canvas notes');
   return data;
 }
 

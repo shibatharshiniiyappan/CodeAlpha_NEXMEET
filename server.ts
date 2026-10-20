@@ -94,7 +94,25 @@ interface Meeting {
   passcode?: string;
   waitingRoomEnabled: boolean;
   screensharePolicy: 'anyone' | 'host_only';
+  spatialTheme?: string;
   aiSummary?: AISummary;
+}
+
+interface CanvasNote {
+  id: string;
+  category: 'idea' | 'question' | 'challenge' | 'decision' | 'action';
+  title: string;
+  content: string;
+  x: number;
+  y: number;
+  votes: number;
+  votedUserIds: string[];
+  assignee?: string;
+  status?: 'pending' | 'in_progress' | 'completed';
+  dueDate?: string;
+  createdBy: string;
+  createdByName: string;
+  createdAt: number;
 }
 
 interface ChatMessage {
@@ -164,6 +182,8 @@ interface RoomPeer {
   audioEnabled: boolean;
   videoEnabled: boolean;
   isScreenSharing: boolean;
+  isSpeaking?: boolean;
+  handRaised?: boolean;
   isHost?: boolean;
   joinedAt: number;
 }
@@ -183,9 +203,11 @@ const meetingsDb = new Map<string, Meeting>(); // key: meetingId or code
 const meetingMessagesDb = new Map<string, ChatMessage[]>(); // meetingId -> messages
 const meetingFilesDb = new Map<string, StoredFile[]>(); // meetingId -> files
 const meetingWhiteboardsDb = new Map<string, WhiteboardStroke[]>(); // meetingId -> strokes
+const meetingCanvasNotesDb = new Map<string, CanvasNote[]>(); // meetingId -> canvas notes
 const meetingHistoryDb = new Map<string, MeetingHistoryRecord[]>(); // userId -> history records
 const waitingRoomPeers = new Map<string, Map<string, WaitingParticipant>>(); // roomId -> Map(socketId, WaitingParticipant)
 const roomPeers = new Map<string, Map<string, RoomPeer>>(); // roomId -> Map(socketId, RoomPeer)
+const roomSpatialThemes = new Map<string, string>(); // roomId -> theme name
 
 function hashPassword(password: string, salt: string): string {
   return crypto.scryptSync(password, salt, 64).toString('hex');
@@ -478,7 +500,7 @@ app.get('/api/auth/me', authenticateToken, (req: Request, res: Response) => {
 // 4. Meetings: Create Room with Host Controls & Security Settings
 app.post('/api/meetings/create', (req: Request, res: Response) => {
   try {
-    const { title, hostName, hostId, passcode, waitingRoomEnabled, screensharePolicy } = req.body;
+    const { title, hostName, hostId, passcode, waitingRoomEnabled, screensharePolicy, spatialTheme } = req.body;
     const meetingId = `room-${crypto.randomBytes(8).toString('hex')}`;
 
     // Generate unique 10-digit Zoom-style formatted code e.g. "849-392-1849"
@@ -495,6 +517,7 @@ app.post('/api/meetings/create', (req: Request, res: Response) => {
 
     const effectiveHostId = hostId || `host-${crypto.randomBytes(4).toString('hex')}`;
     const cleanPasscode = passcode ? String(passcode).trim() : undefined;
+    const effectiveTheme = spatialTheme || 'innovation-lab';
 
     const newMeeting: Meeting = {
       id: meetingId,
@@ -507,11 +530,13 @@ app.post('/api/meetings/create', (req: Request, res: Response) => {
       passcode: cleanPasscode,
       waitingRoomEnabled: !!waitingRoomEnabled,
       screensharePolicy: screensharePolicy === 'host_only' ? 'host_only' : 'anyone',
+      spatialTheme: effectiveTheme,
     };
 
     meetingsDb.set(meetingId, newMeeting);
     meetingsDb.set(code, newMeeting);
     meetingsDb.set(code.replace(/-/g, ''), newMeeting);
+    roomSpatialThemes.set(code, effectiveTheme);
     saveMeetingsToDisk();
 
     // Auto-record in host's meeting history
@@ -696,6 +721,16 @@ app.get('/api/meetings/:idOrCode/ai-summary', (req: Request, res: Response) => {
     return res.status(404).json({ error: 'Meeting not found' });
   }
   return res.json({ summary: found.aiSummary || null });
+});
+
+// 8b. Meetings: Get Saved Canvas Notes
+app.get('/api/meetings/:idOrCode/canvas-notes', (req: Request, res: Response) => {
+  const found = findMeetingByKey(req.params.idOrCode);
+  if (!found) {
+    return res.status(404).json({ error: 'Meeting not found' });
+  }
+  const notes = meetingCanvasNotesDb.get(found.code) || [];
+  return res.json({ notes });
 });
 
 // 9. Meeting History: User's Genuine Past Meetings
@@ -1002,6 +1037,7 @@ io.on('connection', (socket) => {
 
     // Send existing peers in room to newly joined participant
     const existingPeers = Array.from(peersInRoom.values());
+    const currentTheme = roomSpatialThemes.get(canonicalRoomId) || meeting.spatialTheme || 'innovation-lab';
     socket.emit('room-users', {
       peers: existingPeers,
       selfSocketId: socket.id,
@@ -1011,6 +1047,7 @@ io.on('connection', (socket) => {
         screensharePolicy: meeting.screensharePolicy,
         hostId: meeting.hostId,
         hostName: meeting.hostName,
+        spatialTheme: currentTheme,
       },
     });
 
@@ -1033,6 +1070,10 @@ io.on('connection', (socket) => {
     // Send existing whiteboard state
     const strokes = meetingWhiteboardsDb.get(canonicalRoomId) || [];
     socket.emit('whiteboard:init', strokes);
+
+    // Send existing Idea-to-Action Canvas notes
+    const canvasNotes = meetingCanvasNotesDb.get(canonicalRoomId) || [];
+    socket.emit('canvas:init', canvasNotes);
 
     // Send existing chat history
     const history = meetingMessagesDb.get(canonicalRoomId) || [];
@@ -1412,6 +1453,144 @@ io.on('connection', (socket) => {
       }
     }
     io.to(`room-${currentRoomId}`).emit('whiteboard:init', strokes);
+  });
+
+  // 18. Spatial Rooms: Set Theme
+  socket.on('spatial:set-theme', ({ theme }: { theme: string }) => {
+    if (!currentRoomId) return;
+    const validThemes = ['innovation-lab', 'focus-room', 'creative-studio', 'boardroom'];
+    if (!validThemes.includes(theme)) return;
+
+    roomSpatialThemes.set(currentRoomId, theme);
+    const meeting = findMeetingByKey(currentRoomId);
+    if (meeting) {
+      meeting.spatialTheme = theme;
+      saveMeetingsToDisk();
+    }
+
+    io.to(`room-${currentRoomId}`).emit('spatial:theme-updated', { theme });
+
+    const sysMsg: ChatMessage = {
+      id: `sys-${Date.now()}`,
+      meetingId: currentRoomId,
+      senderId: 'system',
+      senderName: 'NEXMEET Spatial',
+      senderAvatar: '',
+      text: `Spatial environment transitioned to ${theme.replace('-', ' ').toUpperCase()}.`,
+      timestamp: new Date().toISOString(),
+      type: 'system',
+    };
+    meetingMessagesDb.get(currentRoomId)?.push(sysMsg);
+    io.to(`room-${currentRoomId}`).emit('chat:received', sysMsg);
+  });
+
+  // 19. Idea-to-Action Canvas: Add Note
+  socket.on('canvas:add-note', (note: CanvasNote) => {
+    if (!currentRoomId) return;
+    if (!meetingCanvasNotesDb.has(currentRoomId)) {
+      meetingCanvasNotesDb.set(currentRoomId, []);
+    }
+    const notes = meetingCanvasNotesDb.get(currentRoomId)!;
+    notes.push(note);
+    io.to(`room-${currentRoomId}`).emit('canvas:note-added', note);
+  });
+
+  // 20. Idea-to-Action Canvas: Update Note
+  socket.on('canvas:update-note', (updatedNote: Partial<CanvasNote> & { id: string }) => {
+    if (!currentRoomId) return;
+    const notes = meetingCanvasNotesDb.get(currentRoomId);
+    if (!notes) return;
+    const idx = notes.findIndex((n) => n.id === updatedNote.id);
+    if (idx !== -1) {
+      notes[idx] = { ...notes[idx], ...updatedNote };
+      io.to(`room-${currentRoomId}`).emit('canvas:note-updated', notes[idx]);
+    }
+  });
+
+  // 21. Idea-to-Action Canvas: Move Note
+  socket.on('canvas:move-note', ({ id, x, y }: { id: string; x: number; y: number }) => {
+    if (!currentRoomId) return;
+    const notes = meetingCanvasNotesDb.get(currentRoomId);
+    if (!notes) return;
+    const note = notes.find((n) => n.id === id);
+    if (note) {
+      note.x = x;
+      note.y = y;
+      socket.to(`room-${currentRoomId}`).emit('canvas:note-moved', { id, x, y });
+    }
+  });
+
+  // 22. Idea-to-Action Canvas: Vote Note
+  socket.on('canvas:vote-note', ({ id, userId }: { id: string; userId: string }) => {
+    if (!currentRoomId) return;
+    const notes = meetingCanvasNotesDb.get(currentRoomId);
+    if (!notes) return;
+    const note = notes.find((n) => n.id === id);
+    if (note) {
+      if (!note.votedUserIds) note.votedUserIds = [];
+      const votedIdx = note.votedUserIds.indexOf(userId);
+      if (votedIdx === -1) {
+        note.votedUserIds.push(userId);
+        note.votes += 1;
+      } else {
+        note.votedUserIds.splice(votedIdx, 1);
+        note.votes = Math.max(0, note.votes - 1);
+      }
+      io.to(`room-${currentRoomId}`).emit('canvas:note-updated', note);
+    }
+  });
+
+  // 23. Idea-to-Action Canvas: Delete Note
+  socket.on('canvas:delete-note', ({ id }: { id: string }) => {
+    if (!currentRoomId) return;
+    const notes = meetingCanvasNotesDb.get(currentRoomId);
+    if (!notes) return;
+    const filtered = notes.filter((n) => n.id !== id);
+    meetingCanvasNotesDb.set(currentRoomId, filtered);
+    io.to(`room-${currentRoomId}`).emit('canvas:note-deleted', { id });
+  });
+
+  // 24. Idea-to-Action Canvas: Clear
+  socket.on('canvas:clear', () => {
+    if (!currentRoomId) return;
+    meetingCanvasNotesDb.set(currentRoomId, []);
+    io.to(`room-${currentRoomId}`).emit('canvas:cleared');
+  });
+
+  // 25. Floating Reactions
+  socket.on('reaction:send', ({ emoji }: { emoji: string }) => {
+    if (!currentRoomId || !currentUser) return;
+    const reaction = {
+      id: `react-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      emoji,
+      senderName: currentUser.userName,
+      timestamp: Date.now(),
+      xOffsetPercent: Math.floor(Math.random() * 80) + 10,
+    };
+    io.to(`room-${currentRoomId}`).emit('reaction:received', reaction);
+  });
+
+  // 26. Raise Hand
+  socket.on('hand:toggle', ({ raised }: { raised: boolean }) => {
+    if (!currentRoomId || !currentUser) return;
+    currentUser.handRaised = !!raised;
+    io.to(`room-${currentRoomId}`).emit('hand:updated', {
+      socketId: socket.id,
+      userId: currentUser.userId,
+      userName: currentUser.userName,
+      handRaised: currentUser.handRaised,
+    });
+  });
+
+  // 27. Peer Speaking
+  socket.on('peer:speaking', ({ isSpeaking }: { isSpeaking: boolean }) => {
+    if (!currentRoomId || !currentUser) return;
+    currentUser.isSpeaking = !!isSpeaking;
+    socket.to(`room-${currentRoomId}`).emit('peer:speaking-changed', {
+      socketId: socket.id,
+      userId: currentUser.userId,
+      isSpeaking: !!isSpeaking,
+    });
   });
 
   // Disconnection cleanup

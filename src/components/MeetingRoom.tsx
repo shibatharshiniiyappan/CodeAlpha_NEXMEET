@@ -20,6 +20,11 @@ import {
   Lock,
   Sparkles,
   UserPlus,
+  Compass,
+  LayoutGrid,
+  BarChart3,
+  Activity,
+  Lightbulb,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWebRTC } from '../hooks/useWebRTC';
@@ -27,7 +32,13 @@ import { Whiteboard } from './Whiteboard';
 import { SidePanel } from './SidePanel';
 import { SecurityModal } from './SecurityModal';
 import { InviteModal } from './InviteModal';
-import { Meeting, RoomPeer } from '../types';
+import { SpatialRoomView } from './SpatialRoomView';
+import { IdeaToActionCanvas } from './IdeaToActionCanvas';
+import { FloatingReactions } from './FloatingReactions';
+import { ParticipationAnalyticsModal } from './ParticipationAnalyticsModal';
+import { AISummaryPanel } from './AISummaryPanel';
+import { NetworkDiagnosticsModal } from './NetworkDiagnosticsModal';
+import { Meeting, RoomPeer, SpatialRoomTheme } from '../types';
 import { getMeeting } from '../services/api';
 
 interface MeetingRoomProps {
@@ -48,13 +59,21 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
   const [durationSeconds, setDurationSeconds] = useState<number>(0);
   const [isCopied, setIsCopied] = useState<boolean>(false);
 
+  // View Mode: 'spatial' (2.5D Immersive Theme) or 'grid' (Classic Zoom-style)
+  const [roomViewMode, setRoomViewMode] = useState<'spatial' | 'grid'>('spatial');
+
   // Panels & Views
   const [isWhiteboardOpen, setIsWhiteboardOpen] = useState<boolean>(false);
   const [isWhiteboardExpanded, setIsWhiteboardExpanded] = useState<boolean>(false);
+  const [isCanvasOpen, setIsCanvasOpen] = useState<boolean>(false);
+  const [isCanvasExpanded, setIsCanvasExpanded] = useState<boolean>(false);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState<boolean>(false);
   const [sidePanelTab, setSidePanelTab] = useState<'chat' | 'participants' | 'files'>('chat');
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState<boolean>(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState<boolean>(false);
+  const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState<boolean>(false);
+  const [isAISummaryOpen, setIsAISummaryOpen] = useState<boolean>(false);
+  const [isDiagnosticsModalOpen, setIsDiagnosticsModalOpen] = useState<boolean>(false);
   const [pinnedParticipantId, setPinnedParticipantId] = useState<string | null>(null);
   const [unreadChatCount, setUnreadChatCount] = useState<number>(0);
 
@@ -68,7 +87,12 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
 
     // Fetch meeting details
     getMeeting(roomId)
-      .then((res) => setMeeting(res.meeting))
+      .then((res) => {
+        setMeeting(res.meeting);
+        if (res.meeting.spatialTheme) {
+          // If meeting already has theme set
+        }
+      })
       .catch((e) => console.warn('Could not load meeting metadata', e));
 
     return () => {
@@ -95,9 +119,18 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
     remoteParticipants,
     permissionError,
     isLocalSpeaking,
+    diagnostics,
+    spatialTheme,
+    setSpatialTheme,
+    isHandRaised,
+    toggleHandRaise,
+    talkTimeMap,
+    isMeetingLocked,
+    screensharePolicy,
     toggleAudio,
     toggleVideo,
     toggleScreenShare,
+    reconnectMedia,
   } = useWebRTC(roomId, currentUser, socket);
 
   // Listen for unread messages if side panel is closed
@@ -122,7 +155,7 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
     }
   };
 
-  // Local Video Ref
+  // Local Video Ref for Classic Grid View
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   useEffect(() => {
     if (localVideoRef.current) {
@@ -148,6 +181,8 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const isHost = meeting?.hostId === currentUser.id;
+
   // Convert remote participants to array
   const remoteArray = Array.from(remoteParticipants.values());
   const allParticipantsList: RoomPeer[] = [
@@ -159,6 +194,9 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
       audioEnabled: isAudioEnabled,
       videoEnabled: isVideoEnabled,
       isScreenSharing,
+      isSpeaking: isLocalSpeaking,
+      handRaised: isHandRaised,
+      isHost,
       joinedAt: Date.now(),
     },
     ...remoteArray.map((r) => r.peerInfo),
@@ -166,15 +204,23 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
 
   return (
     <div className="relative flex flex-col h-screen w-full bg-[#080D19] overflow-hidden text-slate-100 font-sans">
+      {/* Floating Emojis Screen Particles */}
+      <FloatingReactions
+        socket={socket}
+        currentUser={currentUser}
+        isHandRaised={isHandRaised}
+        onToggleHand={toggleHandRaise}
+      />
+
       {/* Top Header Bar */}
-      <header className="flex items-center justify-between px-6 py-3 bg-[#111827]/90 backdrop-blur-md border-b border-slate-800/80 shrink-0 z-10">
+      <header className="flex items-center justify-between px-6 py-3 bg-[#111827]/90 backdrop-blur-md border-b border-slate-800/80 shrink-0 z-20">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-violet-600 flex items-center justify-center font-bold text-slate-950 text-base shadow-lg shadow-cyan-500/20">
             N
           </div>
           <div>
             <h1 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
-              <span>{meeting?.title || 'NEXMEET Collaborative Room'}</span>
+              <span>{meeting?.title || 'NEXMEET Collaborative Workspace'}</span>
               <span className="text-[11px] font-mono font-normal text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60">
                 {meeting?.code || roomId}
               </span>
@@ -182,20 +228,68 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
           </div>
         </div>
 
-        {/* Center Indicators */}
-        <div className="hidden md:flex items-center gap-3">
+        {/* Center Indicators & View Mode Switcher */}
+        <div className="hidden lg:flex items-center gap-2.5">
+          {/* Spatial 2.5D vs Grid Toggle */}
+          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5 text-xs">
+            <button
+              onClick={() => setRoomViewMode('spatial')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all ${
+                roomViewMode === 'spatial'
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>Spatial 2.5D</span>
+            </button>
+            <button
+              onClick={() => setRoomViewMode('grid')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all ${
+                roomViewMode === 'grid'
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Video Grid</span>
+            </button>
+          </div>
+
+          {/* Duration Clock */}
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span className="font-mono tabular-nums text-slate-200">{formatTimer(durationSeconds)}</span>
           </div>
 
+          {/* AI Summary Button */}
           <button
-            onClick={() => setIsSecurityModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-950/40 hover:bg-cyan-950/70 border border-cyan-500/30 text-xs text-cyan-300 transition-colors"
-            title="DTLS-SRTP Encryption Specifications"
+            onClick={() => setIsAISummaryOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-950/40 hover:bg-violet-950/70 border border-violet-500/30 text-xs text-violet-300 transition-colors"
+            title="Open Gemini AI Meeting Summary & Actions"
           >
-            <Shield className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="font-mono text-[11px]">DTLS-SRTP SECURED</span>
+            <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+            <span className="font-mono text-[11px]">AI SUMMARY</span>
+          </button>
+
+          {/* Participation Analytics Button */}
+          <button
+            onClick={() => setIsAnalyticsModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-950/40 hover:bg-cyan-950/70 border border-cyan-500/30 text-xs text-cyan-300 transition-colors"
+            title="View Real-Time Talk-Time & Participation Distribution"
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="font-mono text-[11px]">ANALYTICS</span>
+          </button>
+
+          {/* Diagnostics Button */}
+          <button
+            onClick={() => setIsDiagnosticsModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-400 hover:text-white transition-colors"
+            title="WebRTC Connection Stats"
+          >
+            <Activity className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="font-mono text-[11px]">{diagnostics.rttMs}ms</span>
           </button>
         </div>
 
@@ -216,7 +310,7 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
             title="Copy Meeting Link"
           >
             {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
-            <span>{isCopied ? 'Link Copied!' : 'Copy Invitation Link'}</span>
+            <span>{isCopied ? 'Link Copied!' : 'Copy Link'}</span>
           </button>
 
           <button
@@ -238,74 +332,93 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
           </div>
         )}
 
-        {/* Video Stage Area */}
-        <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl bg-[#0B1120] border border-slate-800/80 p-2 shadow-inner">
-          {/* Main Video Layout */}
-          <div
-            className={`w-full h-full grid gap-3 p-1 transition-all ${
-              remoteArray.length === 0
-                ? 'grid-cols-1'
-                : remoteArray.length === 1
-                ? 'grid-cols-1 md:grid-cols-2'
-                : remoteArray.length <= 3
-                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-                : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-            }`}
-          >
-            {/* LOCAL USER TILE */}
+        {/* Dynamic Center Stage: Spatial 2.5D Mode OR Classic Video Grid */}
+        <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl bg-[#0B1120] border border-slate-800/80 shadow-inner">
+          {roomViewMode === 'spatial' ? (
+            <SpatialRoomView
+              roomId={meeting?.code || roomId}
+              socket={socket}
+              currentUser={currentUser}
+              isHost={isHost}
+              spatialTheme={spatialTheme}
+              onThemeChange={(theme) => setSpatialTheme(theme)}
+              localStream={localStream}
+              screenStream={screenStream}
+              isAudioEnabled={isAudioEnabled}
+              isVideoEnabled={isVideoEnabled}
+              isScreenSharing={isScreenSharing}
+              isLocalSpeaking={isLocalSpeaking}
+              remoteParticipants={remoteParticipants}
+              handRaised={isHandRaised}
+            />
+          ) : (
+            /* Classic Video Grid Layout */
             <div
-              className={`relative rounded-xl overflow-hidden bg-[#111827] border transition-all flex items-center justify-center ${
-                isLocalSpeaking ? 'border-cyan-400 ring-2 ring-cyan-500/30' : 'border-slate-800'
+              className={`w-full h-full grid gap-3 p-3 transition-all ${
+                remoteArray.length === 0
+                  ? 'grid-cols-1'
+                  : remoteArray.length === 1
+                  ? 'grid-cols-1 md:grid-cols-2'
+                  : remoteArray.length <= 3
+                  ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                  : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
               }`}
             >
-              {isVideoEnabled || isScreenSharing ? (
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className={`w-full h-full object-cover ${!isScreenSharing ? 'scale-x-[-1]' : ''}`}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center p-4 text-center">
-                  <img
-                    src={currentUser.avatar}
-                    alt={currentUser.name}
-                    className="w-20 h-20 rounded-full border-2 border-cyan-500/40 bg-slate-800 mb-3 shadow-lg"
+              {/* LOCAL USER TILE */}
+              <div
+                className={`relative rounded-xl overflow-hidden bg-[#111827] border transition-all flex items-center justify-center ${
+                  isLocalSpeaking ? 'border-cyan-400 ring-2 ring-cyan-500/30' : 'border-slate-800'
+                }`}
+              >
+                {isVideoEnabled || isScreenSharing ? (
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className={`w-full h-full object-cover ${!isScreenSharing ? 'scale-x-[-1]' : ''}`}
                   />
-                  <p className="text-sm font-semibold text-white">{currentUser.name}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Camera Disabled</p>
-                </div>
-              )}
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-4 text-center">
+                    <img
+                      src={currentUser.avatar}
+                      alt={currentUser.name}
+                      className="w-20 h-20 rounded-full border-2 border-cyan-500/40 bg-slate-800 mb-3 shadow-lg"
+                    />
+                    <p className="text-sm font-semibold text-white">{currentUser.name}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Camera Disabled</p>
+                  </div>
+                )}
 
-              {/* Status Badges Overlay */}
-              <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md text-xs text-white border border-white/10">
-                <span className="font-semibold">{currentUser.name} (You)</span>
-                {!isAudioEnabled && <MicOff className="w-3.5 h-3.5 text-rose-400 ml-1" />}
-                {isScreenSharing && <span className="text-[10px] text-cyan-400 bg-cyan-950 px-1 rounded">Sharing</span>}
+                {/* Status Badges Overlay */}
+                <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md text-xs text-white border border-white/10">
+                  <span className="font-semibold">{currentUser.name} (You)</span>
+                  {!isAudioEnabled && <MicOff className="w-3.5 h-3.5 text-rose-400 ml-1" />}
+                  {isScreenSharing && <span className="text-[10px] text-cyan-400 bg-cyan-950 px-1 rounded">Sharing</span>}
+                </div>
+
+                {/* Speaking Ripple Indicator */}
+                {isLocalSpeaking && (
+                  <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-[10px] text-cyan-300 font-semibold animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                    Speaking
+                  </div>
+                )}
               </div>
 
-              {/* Speaking Ripple Indicator */}
-              {isLocalSpeaking && (
-                <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-[10px] text-cyan-300 font-semibold animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-                  Speaking
-                </div>
-              )}
+              {/* REMOTE PARTICIPANT TILES */}
+              {remoteArray.map((remote) => (
+                <RemoteVideoTile
+                  key={remote.socketId}
+                  participant={remote}
+                  isPinned={pinnedParticipantId === remote.socketId}
+                  onPinToggle={() =>
+                    setPinnedParticipantId(pinnedParticipantId === remote.socketId ? null : remote.socketId)
+                  }
+                />
+              ))}
             </div>
-
-            {/* REMOTE PARTICIPANT TILES */}
-            {remoteArray.map((remote) => (
-              <RemoteVideoTile
-                key={remote.socketId}
-                participant={remote}
-                isPinned={pinnedParticipantId === remote.socketId}
-                onPinToggle={() =>
-                  setPinnedParticipantId(pinnedParticipantId === remote.socketId ? null : remote.socketId)
-                }
-              />
-            ))}
-          </div>
+          )}
 
           {/* Whiteboard Floating / Overlay Panel */}
           {isWhiteboardOpen && (
@@ -325,6 +438,20 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
                 onToggleExpand={() => setIsWhiteboardExpanded(!isWhiteboardExpanded)}
               />
             </div>
+          )}
+
+          {/* Idea-to-Action Canvas Modal */}
+          {isCanvasOpen && (
+            <IdeaToActionCanvas
+              roomId={meeting?.code || roomId}
+              socket={socket}
+              currentUser={currentUser}
+              participants={allParticipantsList}
+              isOpen={isCanvasOpen}
+              onClose={() => setIsCanvasOpen(false)}
+              isExpanded={isCanvasExpanded}
+              onToggleExpand={() => setIsCanvasExpanded(!isCanvasExpanded)}
+            />
           )}
         </div>
 
@@ -390,6 +517,34 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
 
           <div className="w-[1px] h-6 bg-slate-800 mx-1 hidden sm:block" />
 
+          {/* View Mode Toggle Button */}
+          <button
+            onClick={() => setRoomViewMode(roomViewMode === 'spatial' ? 'grid' : 'spatial')}
+            className={`flex items-center gap-1.5 px-3 py-3 rounded-xl text-xs font-semibold transition-all shadow-md ${
+              roomViewMode === 'spatial'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+            }`}
+            title={roomViewMode === 'spatial' ? 'Switch to Video Grid' : 'Switch to Spatial 2.5D Room'}
+          >
+            {roomViewMode === 'spatial' ? <LayoutGrid className="w-4 h-4" /> : <Compass className="w-4 h-4 text-cyan-400" />}
+            <span className="hidden md:inline">{roomViewMode === 'spatial' ? 'Grid' : 'Spatial'}</span>
+          </button>
+
+          {/* Idea-to-Action Canvas Toggle */}
+          <button
+            onClick={() => setIsCanvasOpen(!isCanvasOpen)}
+            className={`flex items-center gap-2 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all shadow-md ${
+              isCanvasOpen
+                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold border border-amber-400 ring-2 ring-amber-500/40'
+                : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700'
+            }`}
+            title="Collaborative Idea-to-Action Canvas"
+          >
+            <Lightbulb className="w-4 h-4 text-amber-400" />
+            <span className="hidden sm:inline">Idea Canvas</span>
+          </button>
+
           {/* Whiteboard Toggle */}
           <button
             onClick={() => setIsWhiteboardOpen(!isWhiteboardOpen)}
@@ -435,16 +590,6 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
             <Users className="w-5 h-5" />
           </button>
 
-          {/* Invite Button */}
-          <button
-            onClick={() => setIsInviteModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-3 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition-all shadow-md"
-            title="Invite Participants"
-          >
-            <UserPlus className="w-4 h-4 text-cyan-400" />
-            <span className="hidden sm:inline">Invite</span>
-          </button>
-
           <div className="w-[1px] h-6 bg-slate-800 mx-1 hidden sm:block" />
 
           {/* Leave Meeting Button */}
@@ -471,7 +616,7 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
         />
       )}
 
-      {/* Zoom-Style Invite Modal */}
+      {/* Invite Modal */}
       {isInviteModalOpen && (
         <InviteModal
           isOpen={isInviteModalOpen}
@@ -480,11 +625,45 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
           roomId={roomId}
         />
       )}
+
+      {/* AI Summary Panel */}
+      {isAISummaryOpen && (
+        <AISummaryPanel
+          isOpen={isAISummaryOpen}
+          onClose={() => setIsAISummaryOpen(false)}
+          meeting={meeting}
+          roomId={meeting?.code || roomId}
+        />
+      )}
+
+      {/* Participation Analytics Modal */}
+      {isAnalyticsModalOpen && (
+        <ParticipationAnalyticsModal
+          isOpen={isAnalyticsModalOpen}
+          onClose={() => setIsAnalyticsModalOpen(false)}
+          roomId={meeting?.code || roomId}
+          meetingDurationSeconds={durationSeconds}
+          talkTimeMap={talkTimeMap}
+          participants={allParticipantsList}
+          currentUserId={currentUser.id}
+        />
+      )}
+
+      {/* Network Diagnostics Modal */}
+      {isDiagnosticsModalOpen && (
+        <NetworkDiagnosticsModal
+          isOpen={isDiagnosticsModalOpen}
+          onClose={() => setIsDiagnosticsModalOpen(false)}
+          diagnostics={diagnostics}
+          onReconnect={reconnectMedia}
+          roomId={meeting?.code || roomId}
+        />
+      )}
     </div>
   );
 };
 
-// Remote Video Tile Subcomponent
+// Remote Video Tile Subcomponent for Classic Grid View
 const RemoteVideoTile: React.FC<{
   participant: any;
   isPinned: boolean;

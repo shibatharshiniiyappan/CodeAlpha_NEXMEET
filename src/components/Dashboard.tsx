@@ -15,8 +15,10 @@ import {
   Clock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Meeting } from '../types';
+import { Meeting, SpatialRoomTheme } from '../types';
 import { extractMeetingCode } from './JoinMeetingModal';
+import { SpatialRoomsSection } from './SpatialRoomsSection';
+import { createMeeting } from '../services/api';
 
 interface DashboardProps {
   onOpenCreateMeeting: () => void;
@@ -85,6 +87,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
     navigator.clipboard.writeText(url);
     setCopiedRecentIdx(idx);
     setTimeout(() => setCopiedRecentIdx(null), 2000);
+  };
+
+  const handleEnterSpatialRoom = async (theme: SpatialRoomTheme) => {
+    try {
+      const themeTitles: Record<SpatialRoomTheme, string> = {
+        'innovation-lab': 'Innovation Lab Brainstorm Hub',
+        'focus-room': 'Focus Room Deep Work Retreat',
+        'creative-studio': 'Creative Studio Design Atelier',
+        'boardroom': 'Executive Boardroom Meeting',
+      };
+      const res = await createMeeting(
+        themeTitles[theme],
+        user?.name || 'Meeting Host',
+        user?.id || 'host-user',
+        {
+          spatialTheme: theme,
+        }
+      );
+      onJoinRoom(res.meeting.code);
+    } catch (err: any) {
+      console.warn('Failed to create instant spatial room, using default room:', err);
+      onJoinRoom('849-392-1849');
+    }
   };
 
   return (
@@ -248,6 +273,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </button>
           </form>
         </div>
+
+        {/* Spatial Rooms Section (NEXMEET 2.0 Immersive Environments) */}
+        <SpatialRoomsSection onEnterSpatialRoom={handleEnterSpatialRoom} />
 
         {/* Recent Meetings Table */}
         <section>

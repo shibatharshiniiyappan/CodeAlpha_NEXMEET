@@ -1,0 +1,24 @@
+[
+  {
+    "id": "hist-1792486031318-e0f886ad",
+    "meetingCode": "671-196-6543",
+    "meetingTitle": "NEXMEET 2.0 Innovation Jam",
+    "role": "host",
+    "userId": "host-4adb0cc7",
+    "userName": "Alex Chen",
+    "joinedAt": "2026-10-20T08:47:11.317Z",
+    "durationSeconds": 0,
+    "participantCount": 1
+  },
+  {
+    "id": "hist-1792486040269-d1e3e421",
+    "meetingCode": "171-364-5738",
+    "meetingTitle": "NEXMEET 2.0 Innovation Jam",
+    "role": "host",
+    "userId": "host-546135a3",
+    "userName": "Alex Chen",
+    "joinedAt": "2026-10-20T08:47:20.269Z",
+    "durationSeconds": 0,
+    "participantCount": 1
+  }
+]
