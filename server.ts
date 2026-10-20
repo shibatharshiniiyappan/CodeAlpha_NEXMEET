@@ -10,7 +10,9 @@ import { GoogleGenAI } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 
 const isProduction = process.env.NODE_ENV === 'production';
-const PORT = 3000;
+const PORT = process.env.PORT && !isNaN(Number(process.env.PORT))
+  ? parseInt(process.env.PORT, 10)
+  : 3000;
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -905,7 +907,7 @@ io.on('connection', (socket) => {
     const found = findMeetingByKey(roomId);
     const canonicalRoomId = found ? found.code : (roomId || '').trim();
 
-    const meeting = found || {
+    const meeting: Meeting = found || {
       id: canonicalRoomId,
       code: canonicalRoomId,
       title: 'Active Room',
@@ -1484,9 +1486,27 @@ async function startServer() {
     });
   } else {
     const distPath = path.resolve(process.cwd(), 'dist');
+    const indexPath = path.join(distPath, 'index.html');
+
+    // Startup check: if dist/index.html is missing, attempt to build frontend assets
+    if (!fs.existsSync(indexPath)) {
+      console.warn(`[NEXMEET] dist/index.html was not found at ${indexPath}. Attempting frontend build...`);
+      try {
+        const { execSync } = await import('child_process');
+        execSync('npm run build', { stdio: 'inherit' });
+        console.log('[NEXMEET] Frontend build generated successfully.');
+      } catch (buildErr) {
+        console.error('[NEXMEET] Automatic build attempt failed:', buildErr);
+      }
+    }
+
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(503).send('NEXMEET frontend build is not found. Please ensure "npm run build" executes before starting the production server.');
+      }
     });
   }
 
