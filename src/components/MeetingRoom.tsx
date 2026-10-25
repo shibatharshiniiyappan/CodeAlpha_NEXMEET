@@ -33,7 +33,7 @@ import { SidePanel } from './SidePanel';
 import { SecurityModal } from './SecurityModal';
 import { InviteModal } from './InviteModal';
 import { SpatialRoomView } from './SpatialRoomView';
-import { IdeaToActionCanvas } from './IdeaToActionCanvas';
+import { IdeaCanvas } from './IdeaCanvas';
 import { FloatingReactions } from './FloatingReactions';
 import { ParticipationAnalyticsModal } from './ParticipationAnalyticsModal';
 import { AISummaryPanel } from './AISummaryPanel';
@@ -440,18 +440,20 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({ roomId, onLeave }) => 
             </div>
           )}
 
-          {/* Idea-to-Action Canvas Modal */}
+          {/* IdeaCanvas Component (Ideas, Questions, Challenges) */}
           {isCanvasOpen && (
-            <IdeaToActionCanvas
-              roomId={meeting?.code || roomId}
-              socket={socket}
-              currentUser={currentUser}
-              participants={allParticipantsList}
-              isOpen={isCanvasOpen}
-              onClose={() => setIsCanvasOpen(false)}
-              isExpanded={isCanvasExpanded}
-              onToggleExpand={() => setIsCanvasExpanded(!isCanvasExpanded)}
-            />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+              <IdeaCanvas
+                roomId={meeting?.code || roomId}
+                socket={socket}
+                currentUser={currentUser}
+                isOpen={isCanvasOpen}
+                onClose={() => setIsCanvasOpen(false)}
+                isExpanded={isCanvasExpanded}
+                onToggleExpand={() => setIsCanvasExpanded(!isCanvasExpanded)}
+                participants={allParticipantsList.map((p) => ({ userId: p.userId, userName: p.userName }))}
+              />
+            </div>
           )}
         </div>
 

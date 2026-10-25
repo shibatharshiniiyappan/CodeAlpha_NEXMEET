@@ -26,8 +26,19 @@ const io = new SocketIOServer(httpServer, {
   maxHttpBufferSize: 1e7, // 10 MB limit for socket payloads
 });
 
-// Basic Express Middlewares
-app.use(cors());
+// Trust reverse proxy headers (e.g. Render, Cloudflare, Nginx)
+app.set('trust proxy', 1);
+
+// Express Middlewares with secure CORS and preflight handling
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  })
+);
+app.options('*', cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -234,6 +245,167 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 const MEETINGS_FILE = path.join(DATA_DIR, 'meetings.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
+const TASKFLOW_FILE = path.join(DATA_DIR, 'taskflow.json');
+
+let inMemoryTaskFlowState: any = null;
+
+function saveTaskFlowToDisk(state: any) {
+  try {
+    inMemoryTaskFlowState = state;
+    fs.writeFileSync(TASKFLOW_FILE, JSON.stringify(state, null, 2));
+  } catch (err) {
+    console.warn('[TaskFlow] Could not persist state to disk:', err);
+  }
+}
+
+function loadTaskFlowFromDisk() {
+  try {
+    if (fs.existsSync(TASKFLOW_FILE)) {
+      inMemoryTaskFlowState = JSON.parse(fs.readFileSync(TASKFLOW_FILE, 'utf-8'));
+      console.log('[TaskFlow] Loaded persistent TaskFlow state from disk');
+    } else {
+      inMemoryTaskFlowState = {
+        projects: [
+          {
+            id: 'proj-nexus-core',
+            name: 'Nexus Core 2.0',
+            description: 'Distributed real-time communication mesh and spatial presence engine.',
+            color: '#06b6d4',
+            icon: 'Layers',
+            status: 'active',
+            leadName: 'Alex Chen',
+            targetDate: '2026-11-15',
+            category: 'Core Infrastructure',
+          },
+          {
+            id: 'proj-cyber-security',
+            name: 'Zero-Trust DTLS Shield',
+            description: 'End-to-end media encryption, ephemeral key exchanges, and access controls.',
+            color: '#8b5cf6',
+            icon: 'Shield',
+            status: 'active',
+            leadName: 'Security Lead',
+            targetDate: '2026-10-31',
+            category: 'Security & Compliance',
+          },
+          {
+            id: 'proj-creative-canvas',
+            name: 'Spatial Collaboration Canvas',
+            description: 'Interactive 2.5D visual ideation cards, real-time node linking, and task converter.',
+            color: '#f59e0b',
+            icon: 'Sparkles',
+            status: 'active',
+            leadName: 'Elena Rostova',
+            targetDate: '2026-12-01',
+            category: 'Product Experience',
+          },
+        ],
+        tasks: [
+          {
+            id: 'task-101',
+            title: 'Architect 2.5D Spatial Perspective Canvas',
+            description: 'Design isometric grid depth math, smooth camera transitions, and dynamic card scaling.',
+            status: 'in_progress',
+            priority: 'high',
+            projectId: 'proj-creative-canvas',
+            projectName: 'Spatial Collaboration Canvas',
+            roomId: 'room-brainstorming',
+            assignee: {
+              id: 'usr-alex-chen',
+              name: 'Alex Chen',
+              avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Alex',
+            },
+            dueDate: '2026-10-25',
+            estimatedHours: 12,
+            tags: ['Frontend', 'Spatial', 'UX'],
+            dependencies: [],
+            subtasks: [
+              { id: 'sub-1', title: 'Implement CSS transform3d perspective stage', completed: true },
+              { id: 'sub-2', title: 'Bind card coordinate zoom & drag handles', completed: true },
+            ],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ],
+        rooms: [
+          {
+            id: 'room-brainstorming',
+            type: 'brainstorming',
+            name: 'Cyber Brainstorming Lab',
+            tagline: 'High-frequency ideation and visual thought mapping',
+            description: 'Equipped with holographic 2.5D nodes, color-coded concept cards, and instant task conversion.',
+            accentColor: '#06b6d4',
+            icon: 'Lightbulb',
+            associatedProjectIds: ['proj-creative-canvas', 'proj-nexus-core'],
+            members: [
+              { id: 'usr-alex-chen', name: 'Alex Chen', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Alex', role: 'Architect' },
+            ],
+            activeTaskIds: ['task-101'],
+            ambientSoundName: 'Cyber Ambient Synth',
+            createdAt: '2026-10-20T10:00:00.000Z',
+          },
+        ],
+        meetings: [],
+        recommendations: [],
+        lastUpdated: new Date().toISOString(),
+      };
+      saveTaskFlowToDisk(inMemoryTaskFlowState);
+      console.log('[TaskFlow] Initialized default TaskFlow seed state on disk');
+    }
+  } catch (err) {
+    console.warn('[TaskFlow] Could not load state from disk:', err);
+  }
+}
+
+function saveUsersToDisk() {
+  try {
+    const list = Array.from(usersDb.values());
+    fs.writeFileSync(USERS_FILE, JSON.stringify(list, null, 2));
+  } catch (err) {
+    console.warn('[NEXMEET] Could not persist users to disk:', err);
+  }
+}
+
+function loadUsersFromDisk() {
+  try {
+    if (fs.existsSync(USERS_FILE)) {
+      const data: User[] = JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
+      for (const u of data) {
+        if (u.email) {
+          usersDb.set(u.email.toLowerCase(), u);
+        }
+      }
+      console.log(`[NEXMEET] Loaded ${data.length} persistent users from disk`);
+    }
+  } catch (err) {
+    console.warn('[NEXMEET] Could not load users from disk:', err);
+  }
+}
+
+function saveSessionsToDisk() {
+  try {
+    const list = Array.from(sessionsDb.entries());
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(list, null, 2));
+  } catch (err) {
+    console.warn('[NEXMEET] Could not persist sessions to disk:', err);
+  }
+}
+
+function loadSessionsToDisk() {
+  try {
+    if (fs.existsSync(SESSIONS_FILE)) {
+      const list: [string, string][] = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf-8'));
+      for (const [token, userId] of list) {
+        sessionsDb.set(token, userId);
+      }
+      console.log(`[NEXMEET] Loaded ${list.length} persistent sessions from disk`);
+    }
+  } catch (err) {
+    console.warn('[NEXMEET] Could not load sessions from disk:', err);
+  }
+}
 
 function saveMeetingsToDisk() {
   try {
@@ -318,8 +490,11 @@ meetingsDb.set(demoMeeting.code, demoMeeting);
 meetingsDb.set(demoMeeting.code.replace(/-/g, ''), demoMeeting);
 meetingsDb.set('nex-studio-live', demoMeeting);
 
+loadUsersFromDisk();
+loadSessionsToDisk();
 loadMeetingsFromDisk();
 loadHistoryFromDisk();
+loadTaskFlowFromDisk();
 
 // Meeting lookup helper
 function findMeetingByKey(rawKey: string): Meeting | undefined {
@@ -400,28 +575,33 @@ function getOptionalUser(req: Request): User | undefined {
 // 1. Auth: Register
 app.post('/api/auth/register', (req: Request, res: Response) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password } = req.body || {};
     if (!name || !email || !password) {
+      console.warn('[NEXMEET Auth] Registration rejected: missing required fields');
       return res.status(400).json({ error: 'Name, email, and password are required' });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanName = String(name).trim();
+
     if (usersDb.has(cleanEmail)) {
+      console.warn(`[NEXMEET Auth] Registration conflict: email already exists (${cleanEmail})`);
       return res.status(409).json({ error: 'An account with this email already exists' });
     }
 
-    if (password.length < 6) {
+    if (String(password).length < 6) {
+      console.warn(`[NEXMEET Auth] Registration rejected: password too short for ${cleanEmail}`);
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
     const salt = crypto.randomBytes(16).toString('hex');
-    const passwordHash = hashPassword(password, salt);
+    const passwordHash = hashPassword(String(password), salt);
     const id = `usr-${crypto.randomBytes(6).toString('hex')}`;
-    const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`;
+    const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(cleanName)}`;
 
     const newUser: User = {
       id,
-      name: name.trim(),
+      name: cleanName,
       email: cleanEmail,
       salt,
       passwordHash,
@@ -430,9 +610,13 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
     };
 
     usersDb.set(cleanEmail, newUser);
+    saveUsersToDisk();
 
     const token = crypto.randomBytes(32).toString('hex');
     sessionsDb.set(token, newUser.id);
+    saveSessionsToDisk();
+
+    console.log(`[NEXMEET Auth] New user registered successfully: id=${newUser.id}, email=${cleanEmail}`);
 
     return res.status(201).json({
       token,
@@ -444,31 +628,38 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
       },
     });
   } catch (err: any) {
-    return res.status(500).json({ error: 'Registration failed', details: err.message });
+    console.error('[NEXMEET Auth Error] Registration exception:', err?.message || err);
+    return res.status(500).json({ error: 'Registration failed', details: err?.message || 'Internal error' });
   }
 });
 
 // 2. Auth: Login
 app.post('/api/auth/login', (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
     if (!email || !password) {
+      console.warn('[NEXMEET Auth] Login rejected: missing email or password');
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = String(email).trim().toLowerCase();
     const user = usersDb.get(cleanEmail);
     if (!user) {
+      console.warn(`[NEXMEET Auth] Login failed: account not found for ${cleanEmail}`);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    const checkHash = hashPassword(password, user.salt);
+    const checkHash = hashPassword(String(password), user.salt);
     if (checkHash !== user.passwordHash) {
+      console.warn(`[NEXMEET Auth] Login failed: incorrect password for ${cleanEmail}`);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     const token = crypto.randomBytes(32).toString('hex');
     sessionsDb.set(token, user.id);
+    saveSessionsToDisk();
+
+    console.log(`[NEXMEET Auth] User authenticated successfully: id=${user.id}, email=${cleanEmail}`);
 
     return res.json({
       token,
@@ -480,21 +671,28 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
       },
     });
   } catch (err: any) {
-    return res.status(500).json({ error: 'Login failed', details: err.message });
+    console.error('[NEXMEET Auth Error] Login exception:', err?.message || err);
+    return res.status(500).json({ error: 'Login failed', details: err?.message || 'Internal error' });
   }
 });
 
 // 3. Auth: Current User
 app.get('/api/auth/me', authenticateToken, (req: Request, res: Response) => {
-  const user = (req as any).user as User;
-  return res.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar,
-    },
-  });
+  try {
+    const user = (req as any).user as User;
+    console.log(`[NEXMEET Auth] Session verified for user: id=${user.id}, email=${user.email}`);
+    return res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+      },
+    });
+  } catch (err: any) {
+    console.error('[NEXMEET Auth Error] /api/auth/me exception:', err?.message || err);
+    return res.status(500).json({ error: 'Failed to retrieve session user' });
+  }
 });
 
 // 4. Meetings: Create Room with Host Controls & Security Settings
@@ -914,6 +1112,186 @@ app.get('/api/security/specs', (_req: Request, res: Response) => {
       turnSupported: true,
       topology: 'Full Mesh WebRTC (P2P for ultra-low latency & true end-to-end media confidentiality)',
     },
+  });
+});
+
+// --- TASKFLOW INTEGRATION ROUTES ---
+
+// 15. TaskFlow: Get State
+app.get('/api/taskflow/state', (_req: Request, res: Response) => {
+  try {
+    if (inMemoryTaskFlowState) {
+      return res.json(inMemoryTaskFlowState);
+    }
+    if (fs.existsSync(TASKFLOW_FILE)) {
+      const data = JSON.parse(fs.readFileSync(TASKFLOW_FILE, 'utf-8'));
+      inMemoryTaskFlowState = data;
+      return res.json(data);
+    }
+    return res.status(404).json({ error: 'No TaskFlow state initialized on server yet' });
+  } catch (err: any) {
+    console.error('[TaskFlow] Error retrieving state:', err);
+    return res.status(500).json({ error: 'Failed to read TaskFlow state' });
+  }
+});
+
+// 16. TaskFlow: Save State
+app.post('/api/taskflow/state', (req: Request, res: Response) => {
+  try {
+    const state = req.body;
+    if (!state || !state.tasks || !state.projects) {
+      return res.status(400).json({ error: 'Invalid TaskFlow state payload' });
+    }
+    saveTaskFlowToDisk(state);
+    return res.json({ success: true, lastUpdated: state.lastUpdated });
+  } catch (err: any) {
+    console.error('[TaskFlow] Error saving state:', err);
+    return res.status(500).json({ error: 'Failed to save TaskFlow state' });
+  }
+});
+
+// 17. TaskFlow: AI Idea Planner (Gemini 3.8 Flash + deterministic fallback)
+app.post('/api/taskflow/ai/plan-idea', async (req: Request, res: Response) => {
+  const { title, description, category } = req.body || {};
+  if (!title) {
+    return res.status(400).json({ error: 'Idea title is required' });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (apiKey) {
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = `You are the CodeAlpha TaskFlow AI Planning Engine. Break down the following idea into actionable subtasks and planning recommendations.
+Idea Title: ${title}
+Category: ${category || 'general'}
+Description: ${description || 'None provided'}
+
+Respond strictly in valid JSON format matching this schema:
+{
+  "subtasks": ["Subtask 1", "Subtask 2", "Subtask 3", "Subtask 4"],
+  "suggestedPriority": "medium",
+  "estimatedDays": 3,
+  "risks": ["Potential risk 1", "Potential risk 2"],
+  "dependenciesAdvice": "Guidance on technical dependencies"
+}`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.3,
+        },
+      });
+
+      if (response.text) {
+        const parsed = JSON.parse(response.text);
+        return res.json({ ...parsed, isAI: true });
+      }
+    } catch (err) {
+      console.warn('[TaskFlow AI] Gemini model call failed, switching to rule-based planner:', err);
+    }
+  }
+
+  // Deterministic rule-based planner fallback
+  const isHigh = String(title).toLowerCase().includes('security') || String(title).toLowerCase().includes('core') || String(title).toLowerCase().includes('api');
+  return res.json({
+    subtasks: [
+      `Specify interface requirements for ${String(title).slice(0, 30)}`,
+      `Implement core prototype logic & state binding`,
+      `Add responsive UI controls with accessibility review`,
+      `Conduct end-to-end integration verification`,
+    ],
+    suggestedPriority: isHigh ? 'urgent' : 'high',
+    estimatedDays: 3,
+    risks: [
+      'Potential state synchronization latency under high concurrency',
+      'Requires validation across mobile viewport dimensions',
+    ],
+    dependenciesAdvice: 'Link as a downstream task to foundational data models before deploying.',
+    isAI: false,
+  });
+});
+
+// 18. TaskFlow: AI Workload & Deadline Analysis
+app.post('/api/taskflow/ai/analyze-workload', async (req: Request, res: Response) => {
+  const { tasks } = req.body || {};
+  const taskList = Array.isArray(tasks) ? tasks : [];
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (apiKey && taskList.length > 0) {
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = `You are the CodeAlpha TaskFlow AI Mission Control Assistant. Analyze the team's workload and active tasks to identify deadline risks, work-in-progress bottlenecks, and scheduling adjustments.
+
+Tasks JSON:
+${JSON.stringify(taskList.slice(0, 15).map(t => ({ id: t.id, title: t.title, status: t.status, priority: t.priority, dueDate: t.dueDate, subtaskCount: t.subtasks?.length || 0 })))}
+
+Respond strictly in valid JSON format matching this schema:
+{
+  "summary": "2-3 sentences summarizing team workload and momentum.",
+  "recommendations": [
+    {
+      "id": "rec-ai-1",
+      "type": "deadline_risk",
+      "title": "Clear concise recommendation title",
+      "reasoning": "Data-driven explanation why this action is recommended",
+      "impact": "high",
+      "targetTaskId": "optional task id",
+      "suggestedAction": {
+        "actionType": "reschedule"
+      },
+      "status": "pending",
+      "createdAt": "${new Date().toISOString()}"
+    }
+  ]
+}`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.3,
+        },
+      });
+
+      if (response.text) {
+        const parsed = JSON.parse(response.text);
+        return res.json({ ...parsed, isAI: true });
+      }
+    } catch (err) {
+      console.warn('[TaskFlow AI] Gemini workload analysis call failed, switching to rule-based:', err);
+    }
+  }
+
+  // Deterministic rule-based workload evaluation fallback
+  const now = new Date();
+  const overdue = taskList.filter((t: any) => t.status !== 'completed' && t.dueDate && new Date(t.dueDate) < now);
+  const inProgress = taskList.filter((t: any) => t.status === 'in_progress');
+
+  const recs = [];
+  if (overdue.length > 0) {
+    recs.push({
+      id: `rec-rule-${Date.now()}-1`,
+      type: 'deadline_risk',
+      title: `${overdue.length} Task(s) Overdue or Approaching Deadline`,
+      reasoning: `Found overdue item "${overdue[0].title}". Recommend expediting or resetting target date to avoid delivery drag.`,
+      impact: 'high',
+      targetTaskId: overdue[0].id,
+      suggestedAction: {
+        actionType: 'reschedule',
+        newDueDate: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+      },
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  return res.json({
+    summary: `Workload status: ${taskList.length} total tasks. ${taskList.filter((t: any) => t.status === 'completed').length} completed, ${inProgress.length} in-progress, ${overdue.length} overdue.`,
+    recommendations: recs,
+    isAI: false,
   });
 });
 
@@ -1484,8 +1862,8 @@ io.on('connection', (socket) => {
     io.to(`room-${currentRoomId}`).emit('chat:received', sysMsg);
   });
 
-  // 19. Idea-to-Action Canvas: Add Note
-  socket.on('canvas:add-note', (note: CanvasNote) => {
+  // 19. Idea-to-Action Canvas / IdeaCanvas: Add Note
+  const handleAddCanvasNote = (note: CanvasNote) => {
     if (!currentRoomId) return;
     if (!meetingCanvasNotesDb.has(currentRoomId)) {
       meetingCanvasNotesDb.set(currentRoomId, []);
@@ -1493,10 +1871,13 @@ io.on('connection', (socket) => {
     const notes = meetingCanvasNotesDb.get(currentRoomId)!;
     notes.push(note);
     io.to(`room-${currentRoomId}`).emit('canvas:note-added', note);
-  });
+    io.to(`room-${currentRoomId}`).emit('idea-canvas:note-added', note);
+  };
+  socket.on('canvas:add-note', handleAddCanvasNote);
+  socket.on('idea-canvas:add-note', handleAddCanvasNote);
 
   // 20. Idea-to-Action Canvas: Update Note
-  socket.on('canvas:update-note', (updatedNote: Partial<CanvasNote> & { id: string }) => {
+  const handleUpdateCanvasNote = (updatedNote: Partial<CanvasNote> & { id: string }) => {
     if (!currentRoomId) return;
     const notes = meetingCanvasNotesDb.get(currentRoomId);
     if (!notes) return;
@@ -1504,11 +1885,14 @@ io.on('connection', (socket) => {
     if (idx !== -1) {
       notes[idx] = { ...notes[idx], ...updatedNote };
       io.to(`room-${currentRoomId}`).emit('canvas:note-updated', notes[idx]);
+      io.to(`room-${currentRoomId}`).emit('idea-canvas:note-updated', notes[idx]);
     }
-  });
+  };
+  socket.on('canvas:update-note', handleUpdateCanvasNote);
+  socket.on('idea-canvas:update-note', handleUpdateCanvasNote);
 
   // 21. Idea-to-Action Canvas: Move Note
-  socket.on('canvas:move-note', ({ id, x, y }: { id: string; x: number; y: number }) => {
+  const handleMoveCanvasNote = ({ id, x, y }: { id: string; x: number; y: number }) => {
     if (!currentRoomId) return;
     const notes = meetingCanvasNotesDb.get(currentRoomId);
     if (!notes) return;
@@ -1517,11 +1901,14 @@ io.on('connection', (socket) => {
       note.x = x;
       note.y = y;
       socket.to(`room-${currentRoomId}`).emit('canvas:note-moved', { id, x, y });
+      socket.to(`room-${currentRoomId}`).emit('idea-canvas:note-moved', { id, x, y });
     }
-  });
+  };
+  socket.on('canvas:move-note', handleMoveCanvasNote);
+  socket.on('idea-canvas:move-note', handleMoveCanvasNote);
 
   // 22. Idea-to-Action Canvas: Vote Note
-  socket.on('canvas:vote-note', ({ id, userId }: { id: string; userId: string }) => {
+  const handleVoteCanvasNote = ({ id, userId }: { id: string; userId: string }) => {
     if (!currentRoomId) return;
     const notes = meetingCanvasNotesDb.get(currentRoomId);
     if (!notes) return;
@@ -1537,25 +1924,34 @@ io.on('connection', (socket) => {
         note.votes = Math.max(0, note.votes - 1);
       }
       io.to(`room-${currentRoomId}`).emit('canvas:note-updated', note);
+      io.to(`room-${currentRoomId}`).emit('idea-canvas:note-updated', note);
     }
-  });
+  };
+  socket.on('canvas:vote-note', handleVoteCanvasNote);
+  socket.on('idea-canvas:vote-note', handleVoteCanvasNote);
 
   // 23. Idea-to-Action Canvas: Delete Note
-  socket.on('canvas:delete-note', ({ id }: { id: string }) => {
+  const handleDeleteCanvasNote = ({ id }: { id: string }) => {
     if (!currentRoomId) return;
     const notes = meetingCanvasNotesDb.get(currentRoomId);
     if (!notes) return;
     const filtered = notes.filter((n) => n.id !== id);
     meetingCanvasNotesDb.set(currentRoomId, filtered);
     io.to(`room-${currentRoomId}`).emit('canvas:note-deleted', { id });
-  });
+    io.to(`room-${currentRoomId}`).emit('idea-canvas:note-deleted', { id });
+  };
+  socket.on('canvas:delete-note', handleDeleteCanvasNote);
+  socket.on('idea-canvas:delete-note', handleDeleteCanvasNote);
 
   // 24. Idea-to-Action Canvas: Clear
-  socket.on('canvas:clear', () => {
+  const handleClearCanvas = () => {
     if (!currentRoomId) return;
     meetingCanvasNotesDb.set(currentRoomId, []);
     io.to(`room-${currentRoomId}`).emit('canvas:cleared');
-  });
+    io.to(`room-${currentRoomId}`).emit('idea-canvas:cleared');
+  };
+  socket.on('canvas:clear', handleClearCanvas);
+  socket.on('idea-canvas:clear', handleClearCanvas);
 
   // 25. Floating Reactions
   socket.on('reaction:send', ({ emoji }: { emoji: string }) => {
@@ -1641,6 +2037,12 @@ io.on('connection', (socket) => {
 
   socket.on('leave-room', handleLeave);
   socket.on('disconnect', handleLeave);
+});
+
+// Explicit API 404 handler: ensure unmatched /api/* requests return 404 JSON, NOT the index.html SPA page
+app.all('/api/*', (req: Request, res: Response) => {
+  console.warn(`[NEXMEET API 404] Unmatched endpoint: ${req.method} ${req.path}`);
+  res.status(404).json({ error: `API route not found: ${req.method} ${req.path}` });
 });
 
 // --- VITE MIDDLEWARE & STATIC ASSET SERVING ---

@@ -21,6 +21,7 @@ import {
   UserCheck,
   Crown,
   VolumeX,
+  Hand,
 } from 'lucide-react';
 import { ChatMessage, FileItem, RoomPeer, User, WaitingParticipant } from '../types';
 import { uploadMeetingFile, getMeetingFiles } from '../services/api';
@@ -481,6 +482,38 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             </div>
           )}
 
+          {/* Real-Time Hand-Raising Queue */}
+          {participants.some((p) => p.handRaised) && (
+            <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <Hand className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  <span>Raised Hands Queue ({participants.filter((p) => p.handRaised).length})</span>
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {participants
+                  .filter((p) => p.handRaised)
+                  .map((p) => (
+                    <div
+                      key={`queue-${p.socketId}`}
+                      className="flex items-center justify-between p-2 rounded-lg bg-slate-900/90 border border-amber-500/30 text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={p.userAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.userName}`}
+                          alt={p.userName}
+                          className="w-5 h-5 rounded-full"
+                        />
+                        <span className="font-medium text-white">{p.userName}</span>
+                      </div>
+                      <span className="text-[10px] text-amber-400 font-mono">Ready to speak</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {/* Active Participants List */}
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -523,6 +556,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                             <span className="text-[10px] text-amber-300 bg-amber-950 px-1.5 py-0.2 rounded font-semibold border border-amber-500/30 flex items-center gap-1 shrink-0">
                               <Crown className="w-2.5 h-2.5 text-amber-400" />
                               <span>Host</span>
+                            </span>
+                          )}
+                          {p.handRaised && (
+                            <span className="text-[10px] text-amber-300 bg-amber-950/80 px-1.5 py-0.2 rounded font-semibold border border-amber-500/30 flex items-center gap-1 shrink-0">
+                              <Hand className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+                              <span>Hand</span>
                             </span>
                           )}
                         </p>

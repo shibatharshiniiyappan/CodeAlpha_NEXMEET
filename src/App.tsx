@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { TaskFlowProvider } from './context/TaskFlowContext';
 import { Navbar } from './components/Navbar';
 import { LandingPage } from './components/LandingPage';
 import { Dashboard } from './components/Dashboard';
@@ -9,14 +10,26 @@ import { AuthModal } from './components/AuthModal';
 import { SecurityModal } from './components/SecurityModal';
 import { CreateMeetingModal } from './components/CreateMeetingModal';
 import { JoinMeetingModal } from './components/JoinMeetingModal';
+import { SidebarNav, TaskFlowNavTab } from './components/taskflow/SidebarNav';
+import { TaskUniverse } from './components/taskflow/TaskUniverse';
+import { SpatialRoomsView } from './components/taskflow/SpatialRoomsView';
+import { IdeaActionCanvasView } from './components/taskflow/IdeaActionCanvasView';
+import { MeetingPulseView } from './components/taskflow/MeetingPulseView';
+import { AIMissionControlView } from './components/taskflow/AIMissionControlView';
+import { ProjectsView } from './components/taskflow/ProjectsView';
+import { SettingsView } from './components/taskflow/SettingsView';
 import { Meeting } from './types';
 
 function AppContent() {
   const { user, setGuestUser } = useAuth();
 
   // Navigation states: 'landing' | 'dashboard' | 'lobby' | 'room'
-  const [currentView, setCurrentView] = useState<'landing' | 'dashboard' | 'lobby' | 'room'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'dashboard' | 'lobby' | 'room'>('dashboard');
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+
+  // TaskFlow Navigation Tab
+  const [activeTaskFlowTab, setActiveTaskFlowTab] = useState<TaskFlowNavTab>('dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
 
   // Modals
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -85,16 +98,22 @@ function AppContent() {
     setIsAuthModalOpen(true);
   };
 
+  const handleSelectTab = (tab: TaskFlowNavTab) => {
+    setActiveTaskFlowTab(tab);
+    setCurrentView('dashboard');
+  };
+
   return (
     <div className="min-h-screen bg-[#080D19] text-slate-100 flex flex-col font-sans">
-      {/* Show Top Bar only on Landing or Dashboard */}
-      {(currentView === 'landing' || currentView === 'dashboard') && (
+      {/* Show Top Bar only on Landing */}
+      {currentView === 'landing' && (
         <Navbar
           onStartMeeting={() => setIsCreateMeetingModalOpen(true)}
           onOpenJoin={() => setIsJoinMeetingModalOpen(true)}
           onOpenAuth={handleOpenAuth}
           onOpenDashboard={() => setCurrentView('dashboard')}
           onOpenSecurity={() => setIsSecurityModalOpen(true)}
+          onOpenTab={(tab) => handleSelectTab(tab)}
         />
       )}
 
@@ -110,15 +129,64 @@ function AppContent() {
       )}
 
       {currentView === 'dashboard' && (
-        <Dashboard
-          onOpenCreateMeeting={() => setIsCreateMeetingModalOpen(true)}
-          onOpenJoinMeeting={() => setIsJoinMeetingModalOpen(true)}
-          onJoinRoom={(roomId) => {
-            setActiveRoomId(roomId);
-            setCurrentView('lobby');
-          }}
-          onOpenSecurity={() => setIsSecurityModalOpen(true)}
-        />
+        <div className="flex-1 flex min-h-0 h-screen overflow-hidden">
+          {/* Collapsible Sidebar */}
+          <SidebarNav
+            currentTab={activeTaskFlowTab}
+            onSelectTab={setActiveTaskFlowTab}
+            onOpenVideoMeeting={() => setIsCreateMeetingModalOpen(true)}
+            onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            onOpenLanding={() => setCurrentView('landing')}
+          />
+
+          {/* Active Tab View */}
+          <main className="flex-1 flex flex-col min-w-0 min-h-0 bg-[#080D19] overflow-hidden">
+            {activeTaskFlowTab === 'dashboard' && (
+              <Dashboard
+                onOpenCreateMeeting={() => setIsCreateMeetingModalOpen(true)}
+                onOpenJoinMeeting={() => setIsJoinMeetingModalOpen(true)}
+                onJoinRoom={(roomId) => {
+                  setActiveRoomId(roomId);
+                  setCurrentView('lobby');
+                }}
+                onOpenSecurity={() => setIsSecurityModalOpen(true)}
+                onOpenTaskUniverse={() => setActiveTaskFlowTab('task_universe')}
+                onOpenSpatialRooms={() => setActiveTaskFlowTab('spatial_rooms')}
+                onOpenIdeaCanvas={() => setActiveTaskFlowTab('idea_canvas')}
+                onOpenMeetingPulse={() => setActiveTaskFlowTab('meeting_pulse')}
+                onOpenMissionControl={() => setActiveTaskFlowTab('mission_control')}
+              />
+            )}
+
+            {activeTaskFlowTab === 'task_universe' && <TaskUniverse />}
+
+            {activeTaskFlowTab === 'spatial_rooms' && (
+              <SpatialRoomsView
+                onJoinMeetingRoom={(roomId) => {
+                  setActiveRoomId(roomId);
+                  setCurrentView('lobby');
+                }}
+              />
+            )}
+
+            {activeTaskFlowTab === 'idea_canvas' && <IdeaActionCanvasView />}
+
+            {activeTaskFlowTab === 'meeting_pulse' && <MeetingPulseView />}
+
+            {activeTaskFlowTab === 'mission_control' && <AIMissionControlView />}
+
+            {activeTaskFlowTab === 'projects' && (
+              <ProjectsView
+                onOpenTaskUniverseProject={() => setActiveTaskFlowTab('task_universe')}
+                onOpenSpatialRoom={() => setActiveTaskFlowTab('spatial_rooms')}
+              />
+            )}
+
+            {activeTaskFlowTab === 'settings' && <SettingsView />}
+          </main>
+        </div>
       )}
 
       {currentView === 'lobby' && activeRoomId && (
@@ -226,7 +294,9 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AppContent />
+        <TaskFlowProvider>
+          <AppContent />
+        </TaskFlowProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

@@ -13,6 +13,11 @@ import {
   Sparkles,
   Link as LinkIcon,
   Clock,
+  Columns,
+  Compass,
+  Lightbulb,
+  Activity,
+  Layers,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Meeting, SpatialRoomTheme } from '../types';
@@ -25,6 +30,11 @@ interface DashboardProps {
   onOpenJoinMeeting: () => void;
   onJoinRoom: (roomId: string) => void;
   onOpenSecurity: () => void;
+  onOpenTaskUniverse?: () => void;
+  onOpenSpatialRooms?: () => void;
+  onOpenIdeaCanvas?: () => void;
+  onOpenMeetingPulse?: () => void;
+  onOpenMissionControl?: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -32,6 +42,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenJoinMeeting,
   onJoinRoom,
   onOpenSecurity,
+  onOpenTaskUniverse,
+  onOpenSpatialRooms,
+  onOpenIdeaCanvas,
+  onOpenMeetingPulse,
+  onOpenMissionControl,
 }) => {
   const { user, logout } = useAuth();
   const [quickInput, setQuickInput] = useState<string>('');
@@ -273,6 +288,156 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </button>
           </form>
         </div>
+
+        {/* CodeAlpha TaskFlow 5-Feature Launchpad Grid */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400 animate-pulse" />
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                CodeAlpha TaskFlow Workspace Capabilities
+              </h3>
+            </div>
+            <span className="text-[11px] font-mono text-cyan-400">Collaborative Workspace 2.0</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Feature 1: Interactive Task Universe */}
+            {onOpenTaskUniverse && (
+              <div
+                onClick={onOpenTaskUniverse}
+                className="p-4 rounded-2xl bg-[#0F172A] border border-cyan-500/30 hover:border-cyan-400 hover:bg-[#162238] transition-all cursor-pointer shadow-lg group"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Columns className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/80 border border-cyan-800 px-2 py-0.5 rounded">
+                    5 Interactive Views
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors mb-1">
+                  Task Universe
+                </h4>
+                <p className="text-xs text-slate-400 leading-relaxed mb-3">
+                  Kanban, Timeline Gantt, Spatial Node Map, Project Explorer, and high-density List views.
+                </p>
+                <div className="flex items-center gap-1 text-xs font-bold text-cyan-400 group-hover:translate-x-1 transition-transform">
+                  <span>Open Task Universe</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            )}
+
+            {/* Feature 2: Spatial Rooms */}
+            {onOpenSpatialRooms && (
+              <div
+                onClick={onOpenSpatialRooms}
+                className="p-4 rounded-2xl bg-[#0F172A] border border-blue-500/30 hover:border-blue-400 hover:bg-[#162238] transition-all cursor-pointer shadow-lg group"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Compass className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-mono text-blue-300 bg-blue-950/80 border border-blue-800 px-2 py-0.5 rounded">
+                    5 Themed Environments
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors mb-1">
+                  Spatial Rooms
+                </h4>
+                <p className="text-xs text-slate-400 leading-relaxed mb-3">
+                  2.5D virtual project workspaces: War Room, Innovation Lab, Focus Room, and Review Chamber.
+                </p>
+                <div className="flex items-center gap-1 text-xs font-bold text-blue-400 group-hover:translate-x-1 transition-transform">
+                  <span>Enter Spatial Rooms</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            )}
+
+            {/* Feature 3: Idea-to-Action Canvas */}
+            {onOpenIdeaCanvas && (
+              <div
+                onClick={onOpenIdeaCanvas}
+                className="p-4 rounded-2xl bg-[#0F172A] border border-amber-500/30 hover:border-amber-400 hover:bg-[#162238] transition-all cursor-pointer shadow-lg group"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Lightbulb className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-mono text-amber-300 bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded">
+                    AI Subtask Decomposition
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors mb-1">
+                  Idea-to-Action Canvas
+                </h4>
+                <p className="text-xs text-slate-400 leading-relaxed mb-3">
+                  Brainstorm concept cards, vote collaboratively, and convert ideas directly into TaskFlow tasks.
+                </p>
+                <div className="flex items-center gap-1 text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
+                  <span>Launch Idea Canvas</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            )}
+
+            {/* Feature 4: Meeting Pulse */}
+            {onOpenMeetingPulse && (
+              <div
+                onClick={onOpenMeetingPulse}
+                className="p-4 rounded-2xl bg-[#0F172A] border border-emerald-500/30 hover:border-emerald-400 hover:bg-[#162238] transition-all cursor-pointer shadow-lg group"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 rounded">
+                    Speaking Distribution
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors mb-1">
+                  Meeting Pulse
+                </h4>
+                <p className="text-xs text-slate-400 leading-relaxed mb-3">
+                  Live speaking-time telemetry, consensus reactions, decision logging, and action items.
+                </p>
+                <div className="flex items-center gap-1 text-xs font-bold text-emerald-400 group-hover:translate-x-1 transition-transform">
+                  <span>Open Meeting Pulse</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            )}
+
+            {/* Feature 5: AI Mission Control */}
+            {onOpenMissionControl && (
+              <div
+                onClick={onOpenMissionControl}
+                className="p-4 rounded-2xl bg-[#0F172A] border border-violet-500/30 hover:border-violet-400 hover:bg-[#162238] transition-all cursor-pointer shadow-lg group sm:col-span-2 lg:col-span-2"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-mono text-violet-300 bg-violet-950/80 border border-violet-800 px-2 py-0.5 rounded">
+                    Gemini 3.8 Flash Engine
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-white group-hover:text-violet-300 transition-colors mb-1">
+                  AI Mission Control & Telemetry
+                </h4>
+                <p className="text-xs text-slate-400 leading-relaxed mb-3">
+                  Executive productivity briefings, deadline conflict prober, workload rebalancing, and transparent approval-based AI planning recommendations.
+                </p>
+                <div className="flex items-center gap-1 text-xs font-bold text-violet-400 group-hover:translate-x-1 transition-transform">
+                  <span>Launch AI Mission Control</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Spatial Rooms Section (NEXMEET 2.0 Immersive Environments) */}
         <SpatialRoomsSection onEnterSpatialRoom={handleEnterSpatialRoom} />

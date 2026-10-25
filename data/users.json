@@ -1,0 +1,29 @@
+[
+  {
+    "id": "usr-alex-chen",
+    "name": "Alex Chen",
+    "email": "alex@nexmeet.dev",
+    "salt": "751871451bd53620587841a371f3923b",
+    "passwordHash": "63ab65b830f2f9e6b87967451a07750461dcb066d146d298ddb06e79d11c35a23ab497531630676b5e82cca4d6ff8c5b5b0a4d9d4d7bdabfaaddfa761f295d14",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Alex",
+    "createdAt": "2026-10-22T16:36:17.624Z"
+  },
+  {
+    "id": "usr-1f320410ec33",
+    "name": "Sarah Connor",
+    "email": "sarah.test.1792687004925@nexmeet.dev",
+    "salt": "84197e69f78a94f3459ae21d89d05739",
+    "passwordHash": "82e7b3a8c44a24d582cda2ee073fba8953b6d7451c45969f672921ded658def00a97bd87333967eb246c4f0411f3aebc3a255fc9578a090f0a9c9c58c9a93f34",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Sarah%20Connor",
+    "createdAt": "2026-10-22T16:36:44.970Z"
+  },
+  {
+    "id": "usr-9a2f8a31756c",
+    "name": "Sarah Connor",
+    "email": "sarah@example.com",
+    "salt": "39880983a92160254cae5ab711c48f74",
+    "passwordHash": "bce2b631153e3eda4a267a7f996dfb0b20720f739b829b97d25bf6be2ba700a5ced5a7948303a733b5989bf2a9c6111f48d318263aa4e56a34f9f8172db5bf0b",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Sarah%20Connor",
+    "createdAt": "2026-10-24T08:07:09.257Z"
+  }
+]

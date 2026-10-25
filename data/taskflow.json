@@ -1,0 +1,124 @@
+{
+  "projects": [
+    {
+      "id": "proj-nexus-core",
+      "name": "Nexus Core 2.0",
+      "description": "Distributed real-time communication mesh and spatial presence engine.",
+      "color": "#06b6d4",
+      "icon": "Layers",
+      "status": "active",
+      "leadName": "Alex Chen",
+      "targetDate": "2026-11-15",
+      "category": "Core Infrastructure"
+    },
+    {
+      "id": "proj-cyber-security",
+      "name": "Zero-Trust DTLS Shield",
+      "description": "End-to-end media encryption, ephemeral key exchanges, and access controls.",
+      "color": "#8b5cf6",
+      "icon": "Shield",
+      "status": "active",
+      "leadName": "Security Lead",
+      "targetDate": "2026-10-31",
+      "category": "Security & Compliance"
+    },
+    {
+      "id": "proj-creative-canvas",
+      "name": "Spatial Collaboration Canvas",
+      "description": "Interactive 2.5D visual ideation cards, real-time node linking, and task converter.",
+      "color": "#f59e0b",
+      "icon": "Sparkles",
+      "status": "active",
+      "leadName": "Elena Rostova",
+      "targetDate": "2026-12-01",
+      "category": "Product Experience"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-101",
+      "title": "Architect 2.5D Spatial Perspective Canvas",
+      "description": "Design isometric grid depth math, smooth camera transitions, and dynamic card scaling.",
+      "status": "in_progress",
+      "priority": "high",
+      "projectId": "proj-creative-canvas",
+      "projectName": "Spatial Collaboration Canvas",
+      "roomId": "room-brainstorming",
+      "assignee": {
+        "id": "usr-alex-chen",
+        "name": "Alex Chen",
+        "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Alex"
+      },
+      "dueDate": "2026-10-25",
+      "estimatedHours": 12,
+      "tags": [
+        "Frontend",
+        "Spatial",
+        "UX"
+      ],
+      "dependencies": [],
+      "subtasks": [
+        {
+          "id": "sub-1",
+          "title": "Implement CSS transform3d perspective stage",
+          "completed": true
+        },
+        {
+          "id": "sub-2",
+          "title": "Bind card coordinate zoom & drag handles",
+          "completed": true
+        }
+      ],
+      "createdAt": "2026-10-22T17:00:19.587Z",
+      "updatedAt": "2026-10-22T17:00:19.587Z"
+    },
+    {
+      "id": "task-verify-1792688435641",
+      "title": "Verify Automated TaskFlow Deployment",
+      "description": "Automated test verification task",
+      "status": "todo",
+      "priority": "high",
+      "projectId": "proj-nexus-core",
+      "projectName": "Nexus Core 2.0",
+      "tags": [
+        "test",
+        "verification"
+      ],
+      "dependencies": [],
+      "subtasks": [],
+      "createdAt": "2026-10-22T17:00:35.641Z",
+      "updatedAt": "2026-10-22T17:00:35.642Z"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "room-brainstorming",
+      "type": "brainstorming",
+      "name": "Cyber Brainstorming Lab",
+      "tagline": "High-frequency ideation and visual thought mapping",
+      "description": "Equipped with holographic 2.5D nodes, color-coded concept cards, and instant task conversion.",
+      "accentColor": "#06b6d4",
+      "icon": "Lightbulb",
+      "associatedProjectIds": [
+        "proj-creative-canvas",
+        "proj-nexus-core"
+      ],
+      "members": [
+        {
+          "id": "usr-alex-chen",
+          "name": "Alex Chen",
+          "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Alex",
+          "role": "Architect"
+        }
+      ],
+      "activeTaskIds": [
+        "task-101"
+      ],
+      "ambientSoundName": "Cyber Ambient Synth",
+      "createdAt": "2026-10-20T10:00:00.000Z"
+    }
+  ],
+  "meetings": [],
+  "recommendations": [],
+  "lastUpdated": "2026-10-22T17:00:19.587Z"
+}
