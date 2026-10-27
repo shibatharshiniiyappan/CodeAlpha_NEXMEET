@@ -289,13 +289,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </form>
         </div>
 
-        {/* CodeAlpha TaskFlow 5-Feature Launchpad Grid */}
+        {/* NEXMEET Collaboration Capabilities Grid */}
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400 animate-pulse" />
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                CodeAlpha TaskFlow Workspace Capabilities
+                NEXMEET Collaboration Capabilities
               </h3>
             </div>
             <span className="text-[11px] font-mono text-cyan-400">Collaborative Workspace 2.0</span>
@@ -374,7 +374,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   Idea-to-Action Canvas
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                  Brainstorm concept cards, vote collaboratively, and convert ideas directly into TaskFlow tasks.
+                  Brainstorm concept cards, vote collaboratively, and convert ideas directly into actionable tasks.
                 </p>
                 <div className="flex items-center gap-1 text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
                   <span>Launch Idea Canvas</span>

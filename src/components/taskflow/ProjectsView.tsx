@@ -50,7 +50,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
     const newProj: ProjectItem = {
       id: `proj-${Date.now()}`,
       name: newProjectName.trim(),
-      description: newProjectDesc.trim() || 'Strategic initiative tracked in TaskFlow.',
+      description: newProjectDesc.trim() || 'Strategic initiative tracked in NEXMEET.',
       color: newProjectColor,
       icon: 'Folder',
       status: 'active',

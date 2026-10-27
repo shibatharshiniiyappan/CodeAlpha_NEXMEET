@@ -129,7 +129,7 @@ export const AIMissionControlView: React.FC = () => {
               <span>Executive Productivity Briefing</span>
             </div>
             <p className="text-sm text-slate-200 leading-relaxed">
-              TaskFlow is coordinating <strong className="text-white">{state.tasks.length} total tasks</strong> across{' '}
+              NEXMEET is coordinating <strong className="text-white">{state.tasks.length} total tasks</strong> across{' '}
               <strong className="text-white">{state.projects.length} strategic tracks</strong>. Current velocity stands at{' '}
               <strong className="text-cyan-400">{completionRate}% completion</strong> with{' '}
               <strong className="text-amber-400">{pendingRecs.length} actionable optimization recommendations</strong>{' '}

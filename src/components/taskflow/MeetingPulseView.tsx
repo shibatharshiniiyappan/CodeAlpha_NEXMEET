@@ -417,7 +417,7 @@ export const MeetingPulseView: React.FC = () => {
 
                       <button
                         onClick={() => handleConvertAction(note.text)}
-                        title="Create TaskFlow Task"
+                        title="Convert to Actionable Task"
                         className="opacity-80 group-hover:opacity-100 flex items-center gap-1 px-2.5 py-1 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800/60 rounded-lg text-xs font-semibold transition-all shrink-0"
                       >
                         <span>Convert</span>

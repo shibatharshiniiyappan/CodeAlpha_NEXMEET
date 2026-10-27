@@ -268,7 +268,7 @@ export const IdeaActionCanvasView: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Brainstorm ideas, vote on team concepts, and turn approved items into TaskFlow tasks
+            Brainstorm ideas, vote on team concepts, and turn approved items into actionable tasks
           </p>
         </div>
 
@@ -415,7 +415,7 @@ export const IdeaActionCanvasView: React.FC = () => {
                     ) : (
                       <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-mono font-semibold px-2 py-1">
                         <Check className="w-3.5 h-3.5" />
-                        <span>In TaskFlow</span>
+                        <span>In Tasks</span>
                       </span>
                     )}
                   </div>
@@ -433,7 +433,7 @@ export const IdeaActionCanvasView: React.FC = () => {
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <CheckSquare className="w-4 h-4 text-cyan-400" />
-                <h3 className="text-base font-bold text-white">Convert Idea to TaskFlow Task</h3>
+                <h3 className="text-base font-bold text-white">Convert Idea to Actionable Task</h3>
               </div>
               <button
                 onClick={() => setConvertingCard(null)}
@@ -534,7 +534,7 @@ export const IdeaActionCanvasView: React.FC = () => {
                 onClick={handleExecuteConversion}
                 className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-colors"
               >
-                Create TaskFlow Task
+                Create Actionable Task
               </button>
             </div>
           </div>

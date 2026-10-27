@@ -260,7 +260,7 @@ export const INITIAL_DEFAULT_STATE: TaskFlowState = {
   meetings: [
     {
       id: 'meeting-sync-849',
-      title: 'TaskFlow Architecture & Spatial Roadmap Review',
+      title: 'NEXMEET Architecture & Spatial Roadmap Review',
       agenda: [
         { id: 'ag-1', text: 'Review 2.5D spatial room perspective matrix', completed: true },
         { id: 'ag-2', text: 'Validate idea-to-action task conversion pipeline', completed: true },

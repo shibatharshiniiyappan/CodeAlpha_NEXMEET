@@ -25,5 +25,14 @@
     "passwordHash": "bce2b631153e3eda4a267a7f996dfb0b20720f739b829b97d25bf6be2ba700a5ced5a7948303a733b5989bf2a9c6111f48d318263aa4e56a34f9f8172db5bf0b",
     "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Sarah%20Connor",
     "createdAt": "2026-10-24T08:07:09.257Z"
+  },
+  {
+    "id": "usr-cc6d97865067",
+    "name": "Audit Bot",
+    "email": "audit_intern@nexmeet.internal",
+    "salt": "945cce24662bc9777beae612bc8ed48f",
+    "passwordHash": "5d0226598756fd1b9f560487b0146788da51b9e2248d9485898144f694e1be4a75552b97932fa5f8c2edf826c39ebadb7604eb408f866c6a6929140a1fb9f90f",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Audit%20Bot",
+    "createdAt": "2026-10-27T13:00:46.943Z"
   }
 ]

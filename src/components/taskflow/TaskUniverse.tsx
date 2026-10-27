@@ -722,7 +722,7 @@ export const TaskUniverse: React.FC = () => {
       {isNewTaskModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="w-full max-w-md bg-[#0F172A] border border-slate-800 rounded-2xl p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-4">Create New TaskFlow Task</h3>
+            <h3 className="text-lg font-bold text-white mb-4">Create New Task</h3>
             <form onSubmit={handleCreateQuickTask} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Task Title</label>

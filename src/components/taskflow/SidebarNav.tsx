@@ -71,11 +71,11 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           {!isCollapsed && (
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-violet-600 flex items-center justify-center font-extrabold text-slate-950 text-base shadow-md shadow-cyan-500/20 shrink-0">
-                TF
+                N
               </span>
               <div className="min-w-0">
                 <div className="text-sm font-extrabold tracking-tight text-white leading-tight">
-                  TaskFlow
+                  NEXMEET
                 </div>
                 <div className="text-[10px] font-mono text-cyan-400 truncate">Spatial Edition 2.0</div>
               </div>
@@ -84,7 +84,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
 
           {isCollapsed && (
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-violet-600 flex items-center justify-center font-extrabold text-slate-950 text-base shadow-md shadow-cyan-500/20 mx-auto">
-              TF
+              N
             </div>
           )}
 

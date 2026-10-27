@@ -1161,7 +1161,7 @@ app.post('/api/taskflow/ai/plan-idea', async (req: Request, res: Response) => {
   if (apiKey) {
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = `You are the CodeAlpha TaskFlow AI Planning Engine. Break down the following idea into actionable subtasks and planning recommendations.
+      const prompt = `You are the NEXMEET AI Planning Engine. Break down the following idea into actionable subtasks and planning recommendations.
 Idea Title: ${title}
 Category: ${category || 'general'}
 Description: ${description || 'None provided'}
@@ -1222,7 +1222,7 @@ app.post('/api/taskflow/ai/analyze-workload', async (req: Request, res: Response
   if (apiKey && taskList.length > 0) {
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = `You are the CodeAlpha TaskFlow AI Mission Control Assistant. Analyze the team's workload and active tasks to identify deadline risks, work-in-progress bottlenecks, and scheduling adjustments.
+      const prompt = `You are the NEXMEET AI Mission Control Assistant. Analyze the team's workload and active tasks to identify deadline risks, work-in-progress bottlenecks, and scheduling adjustments.
 
 Tasks JSON:
 ${JSON.stringify(taskList.slice(0, 15).map(t => ({ id: t.id, title: t.title, status: t.status, priority: t.priority, dueDate: t.dueDate, subtaskCount: t.subtasks?.length || 0 })))}

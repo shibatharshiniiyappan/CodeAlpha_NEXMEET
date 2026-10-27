@@ -590,7 +590,7 @@ export const IdeaCanvas: React.FC<IdeaCanvasProps> = ({
                           handleOpenTaskConvert(note);
                         }}
                         className="p-1 rounded text-slate-400 hover:text-violet-300 hover:bg-black/30 transition-colors"
-                        title="Convert to TaskFlow Task"
+                        title="Convert to Actionable Task"
                       >
                         <ArrowRight className="w-3 h-3" />
                       </button>

@@ -30,17 +30,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="text-lg font-bold tracking-tight text-white whitespace-nowrap shrink-0 flex items-center gap-2.5 hover:opacity-90 transition-opacity"
         >
           <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-violet-600 flex items-center justify-center font-extrabold text-slate-950 text-base shadow-md shadow-cyan-500/20">
-            TF
+            N
           </span>
           <div className="text-left">
-            <span className="text-lg tracking-tight font-extrabold text-white">TaskFlow</span>
+            <span className="text-lg tracking-tight font-extrabold text-white">NEXMEET</span>
             <span className="hidden sm:inline-block ml-1.5 text-[10px] font-mono text-cyan-400 font-bold bg-cyan-950/80 border border-cyan-800 px-1.5 py-0.2 rounded">
-              CodeAlpha
+              WebRTC 3.0
             </span>
           </div>
         </button>
 
-        {/* Zone 2: Navigation Links for TaskFlow Features */}
+        {/* Zone 2: Navigation Links for NEXMEET Collaboration */}
         <nav className="hidden lg:flex items-center gap-5 text-xs font-semibold text-slate-300">
           <button
             onClick={() => onOpenTab ? onOpenTab('task_universe') : onOpenDashboard()}
